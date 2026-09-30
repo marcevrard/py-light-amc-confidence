@@ -1,4 +1,8 @@
-# scan-quiz
+# py-light-amc-confidence
+
+**A lightweight Python take on Auto Multiple Choice (AMC): scannable
+multiple-choice quizzes with degrees of confidence.**
+Inspired by [AMC](https://www.auto-multiple-choice.net/).
 
 Multiple-choice quizzes with **degrees of confidence**, written in Markdown,
 printed as a PDF with a **scannable answer sheet**, and graded automatically
@@ -42,7 +46,7 @@ A blank answer scores 0.
 ## Repository layout
 
 ```
-scan-quiz/
+py-light-amc-confidence/
 ├── Makefile               make  ->  quiz.pdf
 ├── defaults.yaml          pandoc settings (input files, page layout, includes)
 ├── content/
@@ -195,6 +199,16 @@ table and the implicit answers come from:
 
 This repository is an independent implementation and is not affiliated with or
 endorsed by SMART or the University of Liège.
+
+## Inspiration
+
+The project is inspired by [Auto Multiple Choice (AMC)](https://www.auto-multiple-choice.net/),
+the free software for creating and automatically marking multiple-choice
+questionnaires from scanned answer sheets. This repository keeps the same
+overall workflow (print the quiz, scan the filled sheets, mark automatically)
+in a much smaller Python code base, and adds the degrees of confidence that AMC
+does not provide out of the box. It does not reuse AMC's code or file formats,
+and it is not affiliated with the AMC project.
 
 ## Limitations
 
