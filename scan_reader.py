@@ -7,6 +7,7 @@ Usage:
   python3 smart_scan_reader.py scan-*.png --key 3,6,7,4,2 --csv results.csv
   python3 smart_scan_reader.py scans/ --key 3,6,7,4,2 --csv results.csv
   python3 smart_scan_reader.py scans/ --recursive --key 3,6,7,4,2 --debug
+  python3 smart_scan_reader.py scans/ --key 3,6,7,4,2 --pencil   # faint pencil marks
 
 Inputs can be image files and/or folders; a folder is scanned for images
 (add --recursive to include its sub-folders). With --debug, a
@@ -20,6 +21,8 @@ constants documented in the header of smart-scan-quiz.md.
 import argparse
 import csv
 import sys
+from dataclasses import dataclass, replace
+from datetime import datetime
 from pathlib import Path
 
 import cv2
@@ -49,8 +52,26 @@ def dc_xy(q, line, j):
 # ---- SMART certainty-degree scale: DC -> (points if correct, if wrong) --
 SCALE = {0: (13, 4), 1: (16, 3), 2: (17, 2), 3: (18, 0), 4: (19, -6), 5: (20, -20)}
 DEFAULT_DC = 3  # certainty used when the student gives none (or an unreadable one)
-FILLED, DOUBT = 0.50, 0.30  # fill ratio: ticked / ambiguous zone
+
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
+
+
+@dataclass(frozen=True)
+class Tuning:
+    """How dark and how full a bubble must be to count as ticked.
+
+    A pixel is "ink" when it is at least `ink_delta` grey levels darker than the
+    paper (measured on each sheet, so grey scans are handled). A bubble is ticked
+    when the inked share of its inner disk reaches `filled`; between `doubt` and
+    `filled` the mark is reported as faint and not counted.
+    """
+
+    ink_delta: int = 40
+    filled: float = 0.25
+    doubt: float = 0.12
+
+
+PENCIL = Tuning(ink_delta=20, filled=0.15, doubt=0.08)  # light pencil, faint scans
 
 
 def find_marks(gray):
@@ -91,18 +112,23 @@ def rectify(img):
     )
 
 
-def fill_ratio(page, x_mm, y_mm):
-    """Fraction of dark pixels inside the bubble centred at (x_mm, y_mm)."""
+def paper_level(page):
+    """Grey level of the blank paper (the page is mostly white)."""
+    return float(np.median(page))
+
+
+def fill_ratio(page, x_mm, y_mm, level):
+    """Share of pixels darker than `level` in the bubble centred at (x_mm, y_mm)."""
     cx, cy = int(x_mm * PX_PER_MM), int(y_mm * PX_PER_MM)
     mask = np.zeros(page.shape, np.uint8)
     cv2.circle(mask, (cx, cy), int(R_READ * PX_PER_MM), 255, -1)
-    return float((page[mask > 0] < 140).mean())
+    return float((page[mask > 0] < level).mean())
 
 
-def pick(ratios):
+def pick(ratios, tuning):
     """Turn the fill ratios of one group of bubbles into (index or None, flag)."""
-    ticked = [i for i, r in enumerate(ratios) if r >= FILLED]
-    doubt = [i for i, r in enumerate(ratios) if DOUBT <= r < FILLED]
+    ticked = [i for i, r in enumerate(ratios) if r >= tuning.filled]
+    doubt = [i for i, r in enumerate(ratios) if tuning.doubt <= r < tuning.filled]
     if len(ticked) == 1 and not doubt:
         return ticked[0], ""
     if not ticked and not doubt:
@@ -114,14 +140,15 @@ def pick(ratios):
     return None, "multiple marks"
 
 
-def read_sheet(img):
+def read_sheet(img, tuning):
     """Return (student ID, rows, flags, rectified page) for one scanned sheet."""
     page = rectify(img)
+    level = paper_level(page) - tuning.ink_delta
     flags = []
     digits = []
     for i in range(N_DIGITS):
-        ratios = [fill_ratio(page, *id_xy(i, d)) for d in range(10)]
-        d, flag = pick(ratios)
+        ratios = [fill_ratio(page, *id_xy(i, d), level) for d in range(10)]
+        d, flag = pick(ratios, tuning)
         digits.append("?" if d is None else str(d))
         if d is None:
             flags.append(f"ID digit {i + 1}: {flag or 'blank'}")
@@ -131,8 +158,10 @@ def read_sheet(img):
     for q in range(N_Q):
         line = []
         for ln in (0, 1):
-            a, flag_a = pick([fill_ratio(page, *ans_xy(q, ln, k)) for k in range(6)])
-            c, flag_c = pick([fill_ratio(page, *dc_xy(q, ln, j)) for j in range(6)])
+            ratios_a = [fill_ratio(page, *ans_xy(q, ln, k), level) for k in range(6)]
+            ratios_c = [fill_ratio(page, *dc_xy(q, ln, j), level) for j in range(6)]
+            a, flag_a = pick(ratios_a, tuning)
+            c, flag_c = pick(ratios_c, tuning)
             line.append((None if a is None else ANS_CODES[a], c, flag_a, flag_c))
         rows.append(line)
     return "".join(digits), rows, flags, page
@@ -160,8 +189,9 @@ def score(ans, dc, key):
     return right if ans == key else wrong
 
 
-def debug_image(page, path):
+def debug_image(page, path, tuning):
     """Save the rectified page with every bubble circled (green = ticked)."""
+    level = paper_level(page) - tuning.ink_delta
     out = cv2.cvtColor(page, cv2.COLOR_GRAY2BGR)
     pts = [id_xy(i, d) for i in range(N_DIGITS) for d in range(10)]
     for q in range(N_Q):
@@ -169,10 +199,10 @@ def debug_image(page, path):
             pts += [ans_xy(q, ln, k) for k in range(6)]
             pts += [dc_xy(q, ln, j) for j in range(6)]
     for x, y in pts:
-        r = fill_ratio(page, x, y)
-        if r >= FILLED:
+        r = fill_ratio(page, x, y, level)
+        if r >= tuning.filled:
             color = (0, 160, 0)
-        elif r >= DOUBT:
+        elif r >= tuning.doubt:
             color = (0, 165, 255)
         else:
             color = (200, 200, 200)
@@ -202,6 +232,12 @@ def collect_images(inputs, recursive=False):
     return images
 
 
+def timestamped(path, now=None):
+    """results.csv -> results_20260930-142530.csv"""
+    now = now or datetime.now()
+    return path.with_name(f"{path.stem}_{now:%Y%m%d-%H%M%S}{path.suffix}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("inputs", nargs="+", help="image files and/or folders")
@@ -209,7 +245,17 @@ def main():
     ap.add_argument("--key", required=True, help="correct answers, e.g. 3,6,7,4,2")
     ap.add_argument("--csv", help="write results to this CSV file")
     ap.add_argument("--debug", action="store_true", help="save <image>.debug.png")
+    ap.add_argument("--no-timestamp", action="store_true", help="keep the CSV name")
+    ap.add_argument("--pencil", action="store_true", help="preset for faint marks")
+    ap.add_argument("--ink-delta", type=int, help="grey levels below paper = ink (40)")
+    ap.add_argument("--fill-min", type=float, help="ink share to count a tick (0.25)")
     args = ap.parse_args()
+
+    tuning = PENCIL if args.pencil else Tuning()
+    if args.ink_delta is not None:
+        tuning = replace(tuning, ink_delta=args.ink_delta)
+    if args.fill_min is not None:
+        tuning = replace(tuning, filled=args.fill_min, doubt=args.fill_min / 2)
 
     key = [int(k) for k in args.key.split(",")]
     if len(key) != N_Q:
@@ -226,7 +272,7 @@ def main():
             print(f"{path}: cannot read image")
             continue
         try:
-            sid, rows, flags, page = read_sheet(img)
+            sid, rows, flags, page = read_sheet(img, tuning)
         except ValueError as e:
             print(f"{path}: {e}")
             continue
@@ -246,17 +292,21 @@ def main():
         line = f"{path}  ID={sid}  total={total}/{20 * N_Q}  grade={grade:.1f}/20"
         print(line + (f"  [{'; '.join(flags)}]" if flags else ""))
         if args.debug:
-            debug_image(page, path.with_name(f"{path.stem}.debug.png"))
+            debug_image(page, path.with_name(f"{path.stem}.debug.png"), tuning)
 
     print(f"{len(table)} sheet(s) read, {len(images) - len(table)} skipped")
     if args.csv and table:
         header = ["file", "student_id"]
         for q in range(1, N_Q + 1):
             header += [f"q{q}_answer", f"q{q}_dc", f"q{q}_points"]
-        with Path(args.csv).open("w", newline="") as f:
+        out_path = Path(args.csv)
+        if not args.no_timestamp:
+            out_path = timestamped(out_path)
+        with out_path.open("w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(header + ["total", "flags"])
             writer.writerows(table)
+        print(f"results written to {out_path}")
 
 
 if __name__ == "__main__":
