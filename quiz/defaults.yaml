@@ -3,7 +3,7 @@ input-files:
   - content/01-instructions.md
   - content/02-questions.md
 metadata:
-  pagetitle: "Scannable quiz with certainty degrees"
+  pagetitle: "Scannable quiz with degrees of confidence"
   lang: en
 variables:
   documentclass: article
@@ -15,4 +15,4 @@ include-in-header:
 include-after-body:
   - template/answer-page.tex
 pdf-engine: pdflatex
-output-file: smart-scan-quiz.pdf
+output-file: quiz.pdf

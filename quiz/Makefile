@@ -1,4 +1,4 @@
-PDF = smart-scan-quiz.pdf
+PDF = quiz.pdf
 SRC = defaults.yaml $(wildcard content/*.md) $(wildcard template/*.tex)
 
 $(PDF): $(SRC)
