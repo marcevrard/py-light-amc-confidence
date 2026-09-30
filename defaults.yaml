@@ -1,9 +1,7 @@
-# Pandoc defaults: build with  pandoc -d defaults.yaml   (run from this folder)
-input-files:
-  - content/01-instructions.md
-  - content/02-questions.md
+# Pandoc defaults shared by all quizzes. Use the Makefile:  make QUIZ=examples/simple
+# (the quiz-specific files -- meta.tex and questions.md -- are added by the Makefile)
 metadata:
-  pagetitle: "Quiz 1"
+  pagetitle: "Quiz"
   lang: en
 variables:
   documentclass: article
@@ -15,4 +13,3 @@ include-in-header:
 include-after-body:
   - template/answer-page.tex
 pdf-engine: pdflatex
-output-file: quiz.pdf

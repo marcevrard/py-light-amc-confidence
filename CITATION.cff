@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "py-light-amc-confidence: scannable multiple-choice quizzes with degrees of confidence"
+authors:
+  - family-names: Evrard
+    given-names: Marc
+    affiliation: "Université Paris-Saclay"
+date-released: 2026-09-30
+license: CC-BY-4.0
+repository-code: "https://github.com/marcevrard/py-light-amc-confidence"

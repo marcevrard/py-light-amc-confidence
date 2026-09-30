@@ -8,9 +8,10 @@ Multiple-choice quizzes with **degrees of confidence**, written in Markdown,
 printed as a PDF with a **scannable answer sheet**, and graded automatically
 from scanned images with a small OpenCV script.
 
-- Write the questions in Markdown (pandoc + LaTeX builds `quiz.pdf`).
-- Students answer on a machine-readable sheet: student ID, one answer and one
-  confidence degree per question, plus a second line to change their mind once.
+- Write the questions, and mark the correct answers, in one Markdown file.
+- The PDF has three pages: instructions, questions, and a machine-readable
+  answer sheet (student ID, one answer and one confidence degree per question,
+  plus a second line to change their mind once).
 - `scan_reader.py` reads the scans, recovers the ID and the answers, scores them
   with the confidence scale and writes a CSV.
 
@@ -47,26 +48,40 @@ A blank answer scores 0.
 
 ```
 py-light-amc-confidence/
-├── Makefile               make  ->  quiz.pdf
-├── defaults.yaml          pandoc settings (input files, page layout, includes)
+├── README.md
+├── LICENSE                CC BY 4.0
+├── CITATION.cff           citation metadata (GitHub "Cite this repository")
+├── Makefile               make [QUIZ=folder]  ->  <folder>/quiz.pdf
+├── defaults.yaml          pandoc settings shared by all quizzes
+├── scan_reader.py         scan -> student ID, answers, scores, CSV
 ├── content/
-│   ├── 01-instructions.md   rules shown to students
-│   └── 02-questions.md      the questions AND the answer key
-├── template/
+│   ├── instructions.md      rules shown to students (page 1)
+│   └── questions-begin.md   questions page heading and spacing (page 2)
+├── template/              LaTeX shared by all quizzes
 │   ├── style.tex            colours, header/footer, \opt \optc \correct macros
 │   ├── title.tex            title block
 │   ├── implicit-answers.tex table of the n / all answers
 │   ├── dc-table.tex         degree-of-confidence table (booktabs)
 │   ├── answer-sheet.tex     scannable sheet (TikZ), geometry documented in its header
 │   └── answer-page.tex      last page carrying the sheet
-├── scan_reader.py         scan -> student ID, answers, scores, CSV
-└── quiz.pdf               example output
+├── examples/
+│   └── simple/            small general-knowledge example, kept in the repo
+│       ├── meta.tex         title, headers, footer
+│       ├── questions.md     questions + answer key
+│       └── quiz.pdf         example output
+└── quizzes/               your real quizzes (ignored by git, see below)
+    └── quiz-1/
+        ├── meta.tex
+        ├── questions.md
+        └── quiz.pdf
 ```
+
+A quiz is just a folder with two files: `meta.tex` and `questions.md`.
 
 ## Requirements
 
 **To build the PDF**
-- [pandoc](https://pandoc.org/)
+- [pandoc](https://pandoc.org/) and `make`
 - a LaTeX distribution with `pdflatex` and the packages `tikz`, `eso-pic`,
   `fancyhdr`, `lastpage`, `titlesec`, `booktabs`, `array`, `xcolor`, `amssymb`
   (TeX Live / MacTeX include them)
@@ -81,56 +96,81 @@ conda activate scanquiz
 # or: pip install opencv-python numpy
 ```
 
-## Build the quiz
+## Build a quiz
 
-From inside the folder (the `\input{template/...}` paths are relative):
+From the repository root (the `\input{template/...}` paths are relative):
 
 ```
-make                 # or: pandoc -d defaults.yaml
+make                       # builds examples/simple/quiz.pdf
+make QUIZ=quizzes/quiz-1   # builds quizzes/quiz-1/quiz.pdf
+make clean QUIZ=quizzes/quiz-1
 ```
 
-This produces `quiz.pdf`: page 1 holds the instructions and the questions
-(with header and footer), page 2 is the answer sheet.
+The PDF has three pages:
 
-## Write your own questions
+1. **Instructions**: the rules and the degree-of-confidence table.
+2. **Questions**: one question per block, with room between questions and
+   between the proposed answers.
+3. **Answer sheet**: the scannable page (no header or footer).
 
-Edit `content/02-questions.md`. One question looks like this:
+Extra pandoc options can be passed with `PANDOC_FLAGS="..."`.
 
-```latex
-**Question 1.** The capital of France is
-\opt{A}{Lille}
-\opt{B}{Lyon}
-\optc{C}{Paris}
-\opt{D}{Nice}
-```
+## Create your own quiz
 
-The answer key lives in the same file and is **invisible in the PDF**:
+1. Copy the example folder: `cp -r examples/simple quizzes/my-quiz`
+2. Edit `quizzes/my-quiz/meta.tex`: title, left and right header, footer.
 
-| Syntax | Meaning |
-|--------|---------|
-| `\optc{C}{Paris}` | proposed answer that is the correct one (prints like `\opt`) |
-| `\correct{n}`     | the correct answer is "none of the above" |
-| `\correct{all}`   | the correct answer is "all of the above" |
+   ```latex
+   \newcommand{\quiztitle}{Quiz 1}
+   \newcommand{\quizlhead}{Master 1 -- Artificial Intelligence}
+   \newcommand{\quizrhead}{Hands-on Machine Learning}
+   \newcommand{\quizlfoot}{Universit\'e Paris-Saclay --- Marc Evrard}
+   ```
 
-Each question must have **exactly one** of these, otherwise the reader stops
-with an error. The answer sheet has **5 question rows**, so the file must hold
-5 questions.
+3. Edit `quizzes/my-quiz/questions.md`. One question looks like this:
 
-Headers, footer and title are plain LaTeX in `template/style.tex` and
-`template/title.tex`. The accent colour is `upsaclay`, defined in
-`template/style.tex`.
+   ```latex
+   **Question 1.** The capital of France is
+   \opt{A}{Lille}
+   \opt{B}{Lyon}
+   \optc{C}{Paris}
+   \opt{D}{Nice}
+   ```
+
+   The answer key lives in the same file and is **invisible in the PDF**:
+
+   | Syntax | Meaning |
+   |--------|---------|
+   | `\optc{C}{Paris}` | proposed answer that is the correct one (prints like `\opt`) |
+   | `\correct{n}`     | the correct answer is "none of the above" |
+   | `\correct{all}`   | the correct answer is "all of the above" |
+
+   Each question must have **exactly one** of these, otherwise the reader stops
+   with an error. The answer sheet has **5 question rows**, so the file must
+   hold 5 questions.
+4. Build it: `make QUIZ=quizzes/my-quiz`.
+
+The colour `upsaclay` and the spacing are defined in `template/style.tex` and
+`content/questions-begin.md`.
+
+### Keep real quizzes private
+
+`quizzes/` is listed in `.gitignore`: the examples are published, but your real
+questions and answer keys (which sit in `questions.md`) stay out of the
+repository. Remove that line from `.gitignore` if you do want to publish them.
 
 ## Print and scan
 
 1. Print `quiz.pdf` on A4 at **100 %** (no page scaling). The four black squares
-   in the page corners are the registration marks and must be printed.
+   in the corners of the answer sheet are the registration marks and must be
+   printed.
 2. Students fill the bubbles completely (pen or pencil): the 8-digit student
    ID, then per question one answer and one DC.
    To change their mind they fill the **2nd line** of that question: it replaces
    the 1st line (answer and/or DC, each separately). Only one change is allowed
    and the 1st line must not be erased.
-3. Scan the answer sheet page flat, all four corner squares visible, about
-   200 dpi, grey or colour. The reader corrects rotation and perspective.
+3. Scan the answer sheet page (page 3) flat, all four corner squares visible,
+   about 200 dpi, grey or colour. The reader corrects rotation and perspective.
 4. PDFs must be converted to images first:
 
 ```
@@ -140,27 +180,29 @@ pdftoppm -r 200 -gray -png scans.pdf scans/scan
 ## Read the scans
 
 ```
-python scan_reader.py scans/ --csv results.csv
+python scan_reader.py scans/ --quiz quizzes/quiz-1 --csv results.csv
 ```
 
-The answer key is read from `content/02-questions.md` next to the script.
+`--quiz` is the quiz folder (or its `questions.md`): the answer key is read
+from it.
 
 | Option | Effect |
 |--------|--------|
 | `inputs…` | image files and/or folders (`.png .jpg .jpeg .tif .tiff .bmp`) |
+| `--quiz PATH` | quiz folder, or the questions file, holding the answer key |
+| `--key C,n,all,D,B` | give the key directly instead of `--quiz` |
 | `--recursive` | also search sub-folders |
 | `--csv FILE` | write the results; the name gets a timestamp, `results_20260930-142530.csv` |
 | `--no-timestamp` | keep the CSV name as given |
 | `--debug` | write `<name>.debug.png` with every bubble circled (green = ticked) |
-| `--questions FILE` | read the key from another question file |
-| `--key C,n,all,D,B` | override the key (letters, or the digits 1–4, 6, 7) |
 | `--pencil` | preset for light pencil or faint scans |
 | `--ink-delta N` | grey levels below the paper that count as ink (default 40) |
 | `--fill-min X` | share of a bubble that must be inked to count as ticked (default 0.25) |
 
 The console prints one line per sheet (ID, total, grade and flags) and the CSV
 has one row per sheet: file, student ID, then answer / DC / points for each
-question, the total and the flags.
+question, the total and the flags. Try it on the example:
+`python scan_reader.py scans/ --quiz examples/simple`.
 
 ### What the reader decides
 
@@ -209,6 +251,33 @@ overall workflow (print the quiz, scan the filled sheets, mark automatically)
 in a much smaller Python code base, and adds the degrees of confidence that AMC
 does not provide out of the box. It does not reuse AMC's code or file formats,
 and it is not affiliated with the AMC project.
+
+## License and how to cite
+
+This work is licensed under the
+[Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+You may share and adapt it for any purpose, including commercially, as long as
+you give appropriate credit, link to the license and indicate changes. See
+[`LICENSE`](LICENSE).
+
+Please cite it as:
+
+> Evrard, M. (2026). *py-light-amc-confidence: scannable multiple-choice
+> quizzes with degrees of confidence*.
+> <https://github.com/marcevrard/py-light-amc-confidence>. CC BY 4.0.
+
+```bibtex
+@software{evrard2026pylightamcconfidence,
+  author  = {Evrard, Marc},
+  title   = {py-light-amc-confidence: scannable multiple-choice quizzes with degrees of confidence},
+  year    = {2026},
+  url     = {https://github.com/marcevrard/py-light-amc-confidence},
+  license = {CC-BY-4.0}
+}
+```
+
+If you use the degree-of-confidence scoring, please also cite the SMART
+references below. Every source file carries a short copyright and license header.
 
 ## Limitations
 

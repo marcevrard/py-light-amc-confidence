@@ -1,0 +1,31 @@
+py-light-amc-confidence
+Copyright (c) 2026 Marc Evrard
+
+This work is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0).
+
+You are free to:
+  Share  - copy and redistribute the material in any medium or format
+  Adapt  - remix, transform, and build upon the material for any purpose,
+           even commercially
+
+Under the following terms:
+  Attribution - You must give appropriate credit, provide a link to the
+  license, and indicate if changes were made. You may do so in any reasonable
+  manner, but not in any way that suggests the licensor endorses you or your
+  use. No additional restrictions: you may not apply legal terms or
+  technological measures that legally restrict others from doing anything the
+  license permits.
+
+Full legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+Summary:         https://creativecommons.org/licenses/by/4.0/
+
+Suggested attribution:
+  Evrard, M. (2026). py-light-amc-confidence: scannable multiple-choice quizzes
+  with degrees of confidence. https://github.com/marcevrard/py-light-amc-confidence
+  Licensed under CC BY 4.0.
+
+The degree-of-confidence scale and the implicit answers follow the method of
+SMART (University of Liege, https://smart.uliege.be/); the workflow is inspired
+by Auto Multiple Choice (https://www.auto-multiple-choice.net/). Neither is
+affiliated with this project; see README.md, References.

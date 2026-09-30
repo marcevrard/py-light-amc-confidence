@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Marc Evrard. Licensed under CC BY 4.0
+# (https://creativecommons.org/licenses/by/4.0/). Attribution required: cite
+# Evrard, M. (2026), py-light-amc-confidence,
+# https://github.com/marcevrard/py-light-amc-confidence
+# Degrees of confidence: SMART, University of Liege, https://smart.uliege.be/
+# Inspired by Auto Multiple Choice, https://www.auto-multiple-choice.net/
 """Read scanned answer sheets made from this quiz project and score them
 with the degree-of-confidence scale.
 
 Usage:
   pdftoppm -r 200 -gray -png scans.pdf scan          # PDF scans -> PNG
-  python3 scan_reader.py scan-*.png --csv results.csv
-  python3 scan_reader.py scans/ --csv results.csv
-  python3 scan_reader.py scans/ --recursive --debug
-  python3 scan_reader.py scans/ --pencil                     # faint pencil marks
+  python3 scan_reader.py scan-*.png --quiz quizzes/quiz-1 --csv results.csv
+  python3 scan_reader.py scans/ --quiz quizzes/quiz-1 --csv results.csv
+  python3 scan_reader.py scans/ --quiz quizzes/quiz-1 --recursive --debug
+  python3 scan_reader.py scans/ --quiz quizzes/quiz-1 --pencil     # faint pencil marks
 
-The answer key is read from content/02-questions.md (\\optc{C}{...} marks the
-correct proposed answer, \\correct{n} or \\correct{all} the implicit ones).
-Use --questions FILE for another file, or --key C,n,all,D,B to override it.
+The answer key is read from the quiz folder given with --quiz (its questions.md:
+\\optc{C}{...} marks the correct proposed answer, \\correct{n} or \\correct{all}
+the implicit ones). --quiz also accepts the questions file itself. Alternatively
+give the key directly with --key C,n,all,D,B.
 
 Inputs can be image files and/or folders; a folder is scanned for images
 (add --recursive to include its sub-folders). With --debug, a
@@ -276,7 +283,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("inputs", nargs="+", help="image files and/or folders")
     ap.add_argument("--recursive", action="store_true", help="also search sub-folders")
-    ap.add_argument("--questions", help="question file holding the key")
+    ap.add_argument("--quiz", help="quiz folder (or its questions.md) holding the key")
     ap.add_argument("--key", help="override the key, e.g. C,n,all,D,B")
     ap.add_argument("--csv", help="write results to this CSV file")
     ap.add_argument("--debug", action="store_true", help="save <image>.debug.png")
@@ -295,9 +302,11 @@ def main():
     try:
         if args.key:
             key = [parse_answer(k) for k in args.key.split(",")]
+        elif args.quiz:
+            path = Path(args.quiz)
+            key = key_from_questions(path / "questions.md" if path.is_dir() else path)
         else:
-            default = Path(__file__).parent / "content" / "02-questions.md"
-            key = key_from_questions(args.questions or default)
+            sys.exit("give the key: --quiz FOLDER (or FILE), or --key C,n,all,D,B")
     except (ValueError, OSError) as e:
         sys.exit(str(e))
     if len(key) != N_Q:

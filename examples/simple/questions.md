@@ -1,5 +1,3 @@
-# Questions {-}
-
 **Question 1.** The capital of France is
 \opt{A}{Lille}
 \opt{B}{Lyon}

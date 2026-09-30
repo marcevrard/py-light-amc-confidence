@@ -1,3 +1,5 @@
+%% Copyright (c) 2026 Marc Evrard, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
+%% py-light-amc-confidence, https://github.com/marcevrard/py-light-amc-confidence
 %% Page style, colours and text macros (used by the whole quiz).
 \usepackage[T1]{fontenc}
 \usepackage[table]{xcolor}
@@ -9,9 +11,10 @@
 \fancyhf{}
 \pagestyle{fancyplain}
 \usepackage{lastpage}
-\lhead{Master 1 -- Artificial Intelligence}
-\rhead{Hands-on Machine Learning}
-\lfoot{Universit\'e Paris-Saclay --- Marc Evrard}
+%% \quizlhead, \quizrhead, \quizlfoot and \quiztitle are defined per quiz in <quiz folder>/meta.tex
+\lhead{\quizlhead}
+\rhead{\quizrhead}
+\lfoot{\quizlfoot}
 \rfoot{Page \thepage /\pageref{LastPage}}
 \titleformat{\section}{\large\bfseries\color{upsaclay}}{}{0pt}{}
 \titlespacing*{\section}{0pt}{1.4em}{.5em}
@@ -19,7 +22,7 @@
 \renewcommand{\arraystretch}{1.35}
 \newcommand{\code}[1]{\textbf{\textcolor{upsaclay}{#1}}}
 %% One proposed answer per line: \opt{A}{text}  (the leading \\ starts the new line)
-\newcommand{\opt}[2]{\\\hspace{2em}\textbf{#1}\quad #2}
+\newcommand{\opt}[2]{\\[1.2ex]\hspace{2em}\textbf{#1}\quad #2}
 %% Answer key, read by scan_reader.py and invisible in the PDF:
 %%   \optc{C}{Paris}   a proposed answer that is the correct one (prints like \opt)
 %%   \correct{n}       the correct answer is "none" (n) or "all" (all); prints nothing

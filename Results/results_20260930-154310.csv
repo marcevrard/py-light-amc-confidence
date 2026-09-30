@@ -1,4 +1,0 @@
-file,student_id,q1_answer,q1_dc,q1_points,q2_answer,q2_dc,q2_points,q3_answer,q3_dc,q3_points,q4_answer,q4_dc,q4_points,q5_answer,q5_dc,q5_points,total,flags
-Scans/test-1.png,36589017,3,1,16,6,5,20,,5,0,3,0,4,2,3,18,58,Q3: 1st answer multiple marks; Q3: no answer
-Scans/test-2.png,06047080,3,5,20,6,5,20,7,3,18,4,,18,2,,18,94,"Q4: no certainty (scored as DC 3); Q5: 1st DC faint mark, not counted; Q5: no certainty (scored as DC 3)"
-Scans/test-3.png,989795?2,3,5,20,6,,18,7,,18,2,0,4,3,5,-20,40,ID digit 7: multiple marks; Q2: no certainty (scored as DC 3); Q3: no certainty (scored as DC 3)
