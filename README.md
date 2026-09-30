@@ -155,9 +155,10 @@ The colour `upsaclay` and the spacing are defined in `template/style.tex` and
 
 ### Keep real quizzes private
 
-`quizzes/` is listed in `.gitignore`: the examples are published, but your real
-questions and answer keys (which sit in `questions.md`) stay out of the
-repository. Remove that line from `.gitignore` if you do want to publish them.
+`quizzes/.gitignore` ignores everything in that folder except itself: the examples
+are published, but your real questions and answer keys (which sit in
+`questions.md`) stay out of the repository. Edit or delete `quizzes/.gitignore`
+if you do want to publish them.
 
 ## Print and scan
 
