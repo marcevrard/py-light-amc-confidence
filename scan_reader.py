@@ -5,7 +5,12 @@ with the SMART certainty-degree scale.
 Usage:
   pdftoppm -r 200 -gray -png scans.pdf scan          # PDF scans -> PNG
   python3 smart_scan_reader.py scan-*.png --key 3,6,7,4,2 --csv results.csv
-  python3 smart_scan_reader.py scan-01.png --key 3,6,7,4,2 --debug
+  python3 smart_scan_reader.py scans/ --key 3,6,7,4,2 --csv results.csv
+  python3 smart_scan_reader.py scans/ --recursive --key 3,6,7,4,2 --debug
+
+Inputs can be image files and/or folders; a folder is scanned for images
+(add --recursive to include its sub-folders). With --debug, a
+<name>.debug.png is written next to each scan and skipped on later runs.
 
 Requires: python3, opencv (import cv2), numpy.
 All geometry (millimetres from the top-left of the A4 page) mirrors the
@@ -15,6 +20,7 @@ constants documented in the header of smart-scan-quiz.md.
 import argparse
 import csv
 import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -44,6 +50,7 @@ def dc_xy(q, line, j):
 SCALE = {0: (13, 4), 1: (16, 3), 2: (17, 2), 3: (18, 0), 4: (19, -6), 5: (20, -20)}
 DEFAULT_DC = 3  # certainty used when the student gives none (or an unreadable one)
 FILLED, DOUBT = 0.50, 0.30  # fill ratio: ticked / ambiguous zone
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
 
 def find_marks(gray):
@@ -171,12 +178,34 @@ def debug_image(page, path):
             color = (200, 200, 200)
         centre = (int(x * PX_PER_MM), int(y * PX_PER_MM))
         cv2.circle(out, centre, int(R_READ * PX_PER_MM), color, 2)
-    cv2.imwrite(path, out)
+    cv2.imwrite(str(path), out)
+
+
+def collect_images(inputs, recursive=False):
+    """Expand files and folders into a sorted, de-duplicated list of image paths."""
+    found = []
+    for item in map(Path, inputs):
+        if item.is_dir():
+            candidates = item.rglob("*") if recursive else item.glob("*")
+            found += sorted(candidates, key=lambda p: p.parts)
+        elif item.is_file():
+            found.append(item)
+        else:
+            print(f"{item}: not found")
+    images = []
+    for path in found:
+        if not path.is_file() or path.suffix.lower() not in IMAGE_SUFFIXES:
+            continue
+        if path.stem.endswith(".debug") or path in images:
+            continue
+        images.append(path)
+    return images
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("images", nargs="+")
+    ap.add_argument("inputs", nargs="+", help="image files and/or folders")
+    ap.add_argument("--recursive", action="store_true", help="also search sub-folders")
     ap.add_argument("--key", required=True, help="correct answers, e.g. 3,6,7,4,2")
     ap.add_argument("--csv", help="write results to this CSV file")
     ap.add_argument("--debug", action="store_true", help="save <image>.debug.png")
@@ -186,9 +215,13 @@ def main():
     if len(key) != N_Q:
         sys.exit(f"--key needs {N_Q} values")
 
+    images = collect_images(args.inputs, args.recursive)
+    if not images:
+        sys.exit("no image found (accepted: " + ", ".join(sorted(IMAGE_SUFFIXES)) + ")")
+
     table = []
-    for path in args.images:
-        img = cv2.imread(path)
+    for path in images:
+        img = cv2.imread(str(path))
         if img is None:
             print(f"{path}: cannot read image")
             continue
@@ -208,18 +241,19 @@ def main():
             elif dc is None:
                 flags.append(f"Q{q + 1}: no certainty (scored as DC {DEFAULT_DC})")
             cells += [ans, dc, points]
-        table.append([path, sid] + cells + [total, "; ".join(flags)])
+        table.append([str(path), sid] + cells + [total, "; ".join(flags)])
         grade = max(0, total) / (N_Q * 20) * 20
         line = f"{path}  ID={sid}  total={total}/{20 * N_Q}  grade={grade:.1f}/20"
         print(line + (f"  [{'; '.join(flags)}]" if flags else ""))
         if args.debug:
-            debug_image(page, path.rsplit(".", 1)[0] + ".debug.png")
+            debug_image(page, path.with_name(f"{path.stem}.debug.png"))
 
+    print(f"{len(table)} sheet(s) read, {len(images) - len(table)} skipped")
     if args.csv and table:
         header = ["file", "student_id"]
         for q in range(1, N_Q + 1):
             header += [f"q{q}_answer", f"q{q}_dc", f"q{q}_points"]
-        with open(args.csv, "w", newline="") as f:
+        with Path(args.csv).open("w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(header + ["total", "flags"])
             writer.writerows(table)
