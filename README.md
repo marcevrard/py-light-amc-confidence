@@ -165,8 +165,10 @@ if you do want to publish them.
 1. Print `quiz.pdf` on A4 at **100 %** (no page scaling). The four black squares
    in the corners of the answer sheet are the registration marks and must be
    printed.
-2. Students fill the bubbles completely (pen or pencil): the 8-digit student
-   ID, then per question one answer and one DC.
+2. Students fill the bubbles completely with a dark **pen**: the 8-digit student
+   ID, then per question one answer and one DC. **A pen is strongly preferred
+   over a pencil**: pencil marks are faint, scan unevenly and are the main cause
+   of unread or flagged bubbles (see `--pencil` below if you must accept them).
    To change their mind they fill the **2nd line** of that question: it replaces
    the 1st line (answer and/or DC, each separately). Only one change is allowed
    and the 1st line must not be erased.
@@ -196,7 +198,7 @@ from it.
 | `--csv FILE` | write the results; the name gets a timestamp, `results_20260930-142530.csv` |
 | `--no-timestamp` | keep the CSV name as given |
 | `--debug` | write `<name>.debug.png` with every bubble circled (green = ticked) |
-| `--pencil` | preset for light pencil or faint scans |
+| `--pencil` | preset for light pencil or faint scans (less reliable than pen) |
 | `--ink-delta N` | grey levels below the paper that count as ink (default 40) |
 | `--fill-min X` | share of a bubble that must be inked to count as ticked (default 0.25) |
 

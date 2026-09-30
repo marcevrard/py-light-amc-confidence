@@ -53,7 +53,7 @@ N_Q, N_DIGITS = 5, 8
 
 def id_xy(i, d):
     """Bubble of digit d in column i. Rows are ordered 1..9 then 0 (0 is last)."""
-    return 50 + 10 * i, 68 + 6 * ((d - 1) % 10)
+    return 40 + 10 * i, 68 + 6 * ((d - 1) % 10)
 
 
 def key_from_questions(path):

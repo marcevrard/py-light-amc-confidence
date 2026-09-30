@@ -5,7 +5,7 @@
 %% TOP-LEFT corner of the A4 page. scan_reader.py uses the same
 %% numbers: if you move anything here, change the constants there too.
 %%   registration marks : 6 mm squares centred on (10,10) (200,10) (10,287) (200,287)
-%%   student ID bubbles : x = 50 + 10*i (i=0..7), y = 68 + 6*r, row r = 0..9 labelled 1 2 3 4 5 6 7 8 9 0
+%%   student ID bubbles : x = 40 + 10*i (i=0..7), y = 68 + 6*r, row r = 0..9 labelled 1 2 3 4 5 6 7 8 9 0
 %%                        (digit 0 is the LAST row)
 %%   answer bubbles     : x = 42 + 9*k, columns A B C D n all
 %%   confidence bubbles  : x = 112 + 9*j, DC 0..5
@@ -18,24 +18,24 @@
   % registration marks
   \foreach \px/\py in {10/10,200/10,10/287,200/287}{\fill[black] (\px-3,\py-3) rectangle (\px+3,\py+3);}
   % title and name
-  \node[font=\sffamily\bfseries\Large] at (105,20) {Answer sheet --- \quiztitle};
-  \node[font=\sffamily\footnotesize,gray] at (105,27) {Fill the bubbles completely, with a dark pen. Do not fold.};
-  \draw[upsaclay,fill=paper] (20,32) rectangle (190,44);
-  \node[anchor=west,font=\sffamily\small\bfseries] at (22,38) {Name and first name:};
-  \node[anchor=west,font=\sffamily\small\bfseries] at (140,38) {Date:};
+  \node[font=\sffamily\bfseries\Large] at (105,18) {Answer sheet --- \quiztitle};
+  \node[font=\sffamily,upsaclay] at (105,26.5) {Fill the bubbles \textbf{completely}, with a \textbf{dark pen}. Do not fold.};
+  \draw[upsaclay,fill=paper] (20,32) rectangle (190,42);
+  \node[anchor=west,font=\sffamily\small\bfseries] at (22,37) {Name and first name:};
+  \node[anchor=west,font=\sffamily\small\bfseries] at (140,37) {Date:};
   % student ID
-  \node[anchor=west,font=\sffamily\small\bfseries,text=upsaclay] at (20,48.5) {Student ID (8 digits)};
+  \node[anchor=west,font=\sffamily\small\bfseries,text=upsaclay] at (20,48) {Student ID (8 digits)};
   \foreach \i in {0,...,7}{
-    \draw (50+10*\i-3.5,54.5) rectangle (50+10*\i+3.5,61.5);
-    \foreach \r in {0,...,9}{ \bub{50+10*\i}{68+6*\r} }
+    \draw (40+10*\i-3.5,54.5) rectangle (40+10*\i+3.5,61.5);
+    \foreach \r in {0,...,9}{ \bub{40+10*\i}{68+6*\r} }
   }
-  \foreach \d [count=\r from 0] in {1,2,3,4,5,6,7,8,9,0}{ \node[font=\sffamily\scriptsize] at (40,68+6*\r) {\d}; }
-  \draw[upsaclay] (45,64.5) -- (125,64.5);
+  \foreach \d [count=\r from 0] in {1,2,3,4,5,6,7,8,9,0}{ \node[font=\sffamily\scriptsize] at (30,68+6*\r) {\d}; }
+  \draw[upsaclay] (35,64.5) -- (115,64.5);
   % instructions box
-  \node[anchor=north west,text width=57mm,font=\sffamily\footnotesize,align=left] at (135,54)
-    {\hyphenpenalty=10000 \textbf{Student ID:} write your 8 digits in the boxes, then fill one bubble per column.\\[2mm]
-     \textbf{Answers:} one bubble per line for the answer (A--D, n = none of them, all = all of them) and one for the degree of confidence (DC 0--5; \textbf{DC 3} if you give none).\\[2mm]
-     \textbf{Changing your mind:} fill the \emph{second line} of the question. It replaces the first line. Only one change is allowed.\\[2mm]
+  \node[anchor=north west,text width=65mm,font=\sffamily\small,align=left] at (125,54)
+    {\hyphenpenalty=10000 \textbf{Student ID:} write your 8 digits in the boxes, then fill one bubble per column.\\[3mm]
+     \textbf{Answers:} one bubble per line for the answer (A--D, n = none of them, all = all of them) and one for the degree of confidence (DC 0--5; \textbf{DC 3} if you give none).\\[3mm]
+     \textbf{Changing your mind:} fill the \emph{second line} of the question. It replaces the first line. Only one change is allowed.\\[3mm]
      \textbf{Do not} erase or use correction fluid on the first line.};
   % answer grid header
   \node[font=\sffamily\small\bfseries,text=upsaclay] at (63.5,132) {Answer};
