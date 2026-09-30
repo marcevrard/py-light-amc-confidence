@@ -20,3 +20,8 @@
 \newcommand{\code}[1]{\textbf{\textcolor{upsaclay}{#1}}}
 %% One proposed answer per line: \opt{A}{text}  (the leading \\ starts the new line)
 \newcommand{\opt}[2]{\\\hspace{2em}\textbf{#1}\quad #2}
+%% Answer key, read by scan_reader.py and invisible in the PDF:
+%%   \optc{C}{Paris}   a proposed answer that is the correct one (prints like \opt)
+%%   \correct{n}       the correct answer is "none" (n) or "all" (all); prints nothing
+\newcommand{\optc}[2]{\opt{#1}{#2}}
+\newcommand{\correct}[1]{}

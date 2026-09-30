@@ -4,10 +4,14 @@ with the degree-of-confidence scale.
 
 Usage:
   pdftoppm -r 200 -gray -png scans.pdf scan          # PDF scans -> PNG
-  python3 scan_reader.py scan-*.png --key C,n,all,D,B --csv results.csv
-  python3 scan_reader.py scans/ --key C,n,all,D,B --csv results.csv
-  python3 scan_reader.py scans/ --recursive --key C,n,all,D,B --debug
-  python3 scan_reader.py scans/ --key C,n,all,D,B --pencil   # faint pencil marks
+  python3 scan_reader.py scan-*.png --csv results.csv
+  python3 scan_reader.py scans/ --csv results.csv
+  python3 scan_reader.py scans/ --recursive --debug
+  python3 scan_reader.py scans/ --pencil                     # faint pencil marks
+
+The answer key is read from content/02-questions.md (\\optc{C}{...} marks the
+correct proposed answer, \\correct{n} or \\correct{all} the implicit ones).
+Use --questions FILE for another file, or --key C,n,all,D,B to override it.
 
 Inputs can be image files and/or folders; a folder is scanned for images
 (add --recursive to include its sub-folders). With --debug, a
@@ -20,6 +24,7 @@ constants documented in the header of template/answer-sheet.tex.
 
 import argparse
 import csv
+import re
 import sys
 from dataclasses import dataclass, replace
 from datetime import datetime
@@ -42,6 +47,23 @@ N_Q, N_DIGITS = 5, 8
 def id_xy(i, d):
     """Bubble of digit d in column i. Rows are ordered 1..9 then 0 (0 is last)."""
     return 50 + 10 * i, 68 + 6 * ((d - 1) % 10)
+
+
+def key_from_questions(path):
+    """Read the answer key from the question file: one correct answer per question."""
+    text = Path(path).read_text(encoding="utf-8")
+    blocks = re.split(r"\*\*Question\s+\d+\.\*\*", text)[1:]
+    pattern = re.compile(r"\\optc\{([A-Da-d])\}|\\correct\{(n|all)\}")
+    key = []
+    for number, block in enumerate(blocks, 1):
+        found = [a or b for a, b in pattern.findall(block)]
+        if len(found) != 1:
+            raise ValueError(
+                f"{path}: question {number} needs exactly one correct answer "
+                f"(\\optc or \\correct), found {len(found)}"
+            )
+        key.append(parse_answer(found[0]))
+    return key
 
 
 def parse_answer(text):
@@ -254,7 +276,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("inputs", nargs="+", help="image files and/or folders")
     ap.add_argument("--recursive", action="store_true", help="also search sub-folders")
-    ap.add_argument("--key", required=True, help="correct answers, e.g. C,n,all,D,B (digits 1-4, 6, 7 also accepted)")
+    ap.add_argument("--questions", help="question file holding the key")
+    ap.add_argument("--key", help="override the key, e.g. C,n,all,D,B")
     ap.add_argument("--csv", help="write results to this CSV file")
     ap.add_argument("--debug", action="store_true", help="save <image>.debug.png")
     ap.add_argument("--no-timestamp", action="store_true", help="keep the CSV name")
@@ -270,11 +293,15 @@ def main():
         tuning = replace(tuning, filled=args.fill_min, doubt=args.fill_min / 2)
 
     try:
-        key = [parse_answer(k) for k in args.key.split(",")]
-    except ValueError as e:
+        if args.key:
+            key = [parse_answer(k) for k in args.key.split(",")]
+        else:
+            default = Path(__file__).parent / "content" / "02-questions.md"
+            key = key_from_questions(args.questions or default)
+    except (ValueError, OSError) as e:
         sys.exit(str(e))
     if len(key) != N_Q:
-        sys.exit(f"--key needs {N_Q} values")
+        sys.exit(f"the answer key has {len(key)} values, the sheet has {N_Q} questions")
 
     images = collect_images(args.inputs, args.recursive)
     if not images:
@@ -300,7 +327,8 @@ def main():
             if ans is None:
                 flags.append(f"Q{q + 1}: no answer")
             elif dc is None:
-                flags.append(f"Q{q + 1}: no confidence degree (scored as DC {DEFAULT_DC})")
+                note = f"no confidence degree (scored as DC {DEFAULT_DC})"
+                flags.append(f"Q{q + 1}: {note}")
             cells += [LABELS.get(ans, ""), dc, points]
         table.append([str(path), sid] + cells + [total, "; ".join(flags)])
         grade = max(0, total) / (N_Q * 20) * 20
