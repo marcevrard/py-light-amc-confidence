@@ -1,0 +1,18 @@
+# Pandoc defaults: build with  pandoc -d defaults.yaml   (run from this folder)
+input-files:
+  - content/01-instructions.md
+  - content/02-questions.md
+metadata:
+  pagetitle: "Scannable quiz with certainty degrees"
+  lang: en
+variables:
+  documentclass: article
+  classoption: [a4paper, 11pt]
+  geometry: [margin=2cm]
+include-in-header:
+  - template/style.tex
+  - template/answer-sheet.tex
+include-after-body:
+  - template/answer-page.tex
+pdf-engine: pdflatex
+output-file: smart-scan-quiz.pdf
