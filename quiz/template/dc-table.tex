@@ -1,15 +1,17 @@
+%% Degree-of-confidence scale (booktabs, slightly reduced size).
 \begin{center}
-\begin{tabular}{|c|c|c|c|}
-\hline
-\rowcolor{paper}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{rrrr}
+\toprule
 \textbf{DC} & \textbf{Probability of being correct} & \textbf{If correct} & \textbf{If wrong}\\
-\hline
+\midrule
 0 & 0 -- 25\,\%   & $+13$ & $+4$\\
 1 & 25 -- 50\,\%  & $+16$ & $+3$\\
 2 & 50 -- 70\,\%  & $+17$ & $+2$\\
 3 & 70 -- 85\,\%  & $+18$ & $0$\\
 4 & 85 -- 95\,\%  & $+19$ & $-6$\\
 5 & 95 -- 100\,\% & $+20$ & $-20$\\
-\hline
+\bottomrule
 \end{tabular}
 \end{center}

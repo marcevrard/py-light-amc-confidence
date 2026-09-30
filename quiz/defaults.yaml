@@ -3,7 +3,7 @@ input-files:
   - content/01-instructions.md
   - content/02-questions.md
 metadata:
-  pagetitle: "Scannable quiz with degrees of confidence"
+  pagetitle: "Quiz 1"
   lang: en
 variables:
   documentclass: article

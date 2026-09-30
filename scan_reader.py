@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Read scanned answer sheets made from smart-scan-quiz.md and score them
-with the SMART certainty-degree scale.
+"""Read scanned answer sheets made from this quiz project and score them
+with the degree-of-confidence scale.
 
 Usage:
   pdftoppm -r 200 -gray -png scans.pdf scan          # PDF scans -> PNG
-  python3 smart_scan_reader.py scan-*.png --key 3,6,7,4,2 --csv results.csv
-  python3 smart_scan_reader.py scans/ --key 3,6,7,4,2 --csv results.csv
-  python3 smart_scan_reader.py scans/ --recursive --key 3,6,7,4,2 --debug
-  python3 smart_scan_reader.py scans/ --key 3,6,7,4,2 --pencil   # faint pencil marks
+  python3 scan_reader.py scan-*.png --key C,n,all,D,B --csv results.csv
+  python3 scan_reader.py scans/ --key C,n,all,D,B --csv results.csv
+  python3 scan_reader.py scans/ --recursive --key C,n,all,D,B --debug
+  python3 scan_reader.py scans/ --key C,n,all,D,B --pencil   # faint pencil marks
 
 Inputs can be image files and/or folders; a folder is scanned for images
 (add --recursive to include its sub-folders). With --debug, a
@@ -15,7 +15,7 @@ Inputs can be image files and/or folders; a folder is scanned for images
 
 Requires: python3, opencv (import cv2), numpy.
 All geometry (millimetres from the top-left of the A4 page) mirrors the
-constants documented in the header of smart-scan-quiz.md.
+constants documented in the header of template/answer-sheet.tex.
 """
 
 import argparse
@@ -28,17 +28,29 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-# ---- geometry (must match smart-scan-quiz.md) ---------------------------
+# ---- geometry (must match template/answer-sheet.tex) ---------------------------
 MARKS = [(10, 10), (200, 10), (10, 287), (200, 287)]  # TL, TR, BL, BR centres
 PAGE_W, PAGE_H = 210, 297
 PX_PER_MM = 8
 R_READ = 1.5  # mm, inner disk that is read (the bubble radius is 2 mm)
-ANS_CODES = [1, 2, 3, 4, 6, 7]
+ANS_CODES = [1, 2, 3, 4, 6, 7]  # internal codes, in the order of the sheet columns
+LABELS = {1: "A", 2: "B", 3: "C", 4: "D", 6: "n", 7: "all"}  # what the sheet prints
+CODE_OF = {v.lower(): k for k, v in LABELS.items()}
 N_Q, N_DIGITS = 5, 8
 
 
 def id_xy(i, d):
-    return 50 + 10 * i, 68 + 6 * d
+    """Bubble of digit d in column i. Rows are ordered 1..9 then 0 (0 is last)."""
+    return 50 + 10 * i, 68 + 6 * ((d - 1) % 10)
+
+
+def parse_answer(text):
+    """'C' -> 3, 'n' -> 6, 'all' -> 7; the digits 1-4, 6, 7 are accepted as well."""
+    t = text.strip().lower()
+    code = CODE_OF.get(t) or (int(t) if t.isdigit() else None)
+    if code not in LABELS:
+        raise ValueError(f"bad answer {text!r}: use A, B, C, D, n or all")
+    return code
 
 
 def ans_xy(q, line, k):
@@ -49,9 +61,9 @@ def dc_xy(q, line, j):
     return 112 + 9 * j, 146 + 22 * q + 9 * line
 
 
-# ---- SMART certainty-degree scale: DC -> (points if correct, if wrong) --
+# ---- degree-of-confidence scale: DC -> (points if correct, if wrong) --
 SCALE = {0: (13, 4), 1: (16, 3), 2: (17, 2), 3: (18, 0), 4: (19, -6), 5: (20, -20)}
-DEFAULT_DC = 3  # certainty used when the student gives none (or an unreadable one)
+DEFAULT_DC = 3  # confidence used when the student gives none (or an unreadable one)
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
@@ -168,7 +180,7 @@ def read_sheet(img, tuning):
 
 
 def final_choice(line):
-    """The 2nd line replaces the 1st one, for the answer and/or the certainty."""
+    """The 2nd line replaces the 1st one, for the answer and/or the confidence."""
     (a1, c1, fa1, fc1), (a2, c2, fa2, fc2) = line
     ans = a2 if a2 is not None else a1
     dc = c2 if c2 is not None else c1
@@ -242,7 +254,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("inputs", nargs="+", help="image files and/or folders")
     ap.add_argument("--recursive", action="store_true", help="also search sub-folders")
-    ap.add_argument("--key", required=True, help="correct answers, e.g. 3,6,7,4,2")
+    ap.add_argument("--key", required=True, help="correct answers, e.g. C,n,all,D,B (digits 1-4, 6, 7 also accepted)")
     ap.add_argument("--csv", help="write results to this CSV file")
     ap.add_argument("--debug", action="store_true", help="save <image>.debug.png")
     ap.add_argument("--no-timestamp", action="store_true", help="keep the CSV name")
@@ -257,7 +269,10 @@ def main():
     if args.fill_min is not None:
         tuning = replace(tuning, filled=args.fill_min, doubt=args.fill_min / 2)
 
-    key = [int(k) for k in args.key.split(",")]
+    try:
+        key = [parse_answer(k) for k in args.key.split(",")]
+    except ValueError as e:
+        sys.exit(str(e))
     if len(key) != N_Q:
         sys.exit(f"--key needs {N_Q} values")
 
@@ -285,8 +300,8 @@ def main():
             if ans is None:
                 flags.append(f"Q{q + 1}: no answer")
             elif dc is None:
-                flags.append(f"Q{q + 1}: no certainty (scored as DC {DEFAULT_DC})")
-            cells += [ans, dc, points]
+                flags.append(f"Q{q + 1}: no confidence degree (scored as DC {DEFAULT_DC})")
+            cells += [LABELS.get(ans, ""), dc, points]
         table.append([str(path), sid] + cells + [total, "; ".join(flags)])
         grade = max(0, total) / (N_Q * 20) * 20
         line = f"{path}  ID={sid}  total={total}/{20 * N_Q}  grade={grade:.1f}/20"

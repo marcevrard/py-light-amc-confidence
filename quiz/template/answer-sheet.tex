@@ -1,11 +1,12 @@
 %% =====================================================================
 %% SCANNABLE ANSWER SHEET. All coordinates are in millimetres from the
-%% TOP-LEFT corner of the A4 page. smart_scan_reader.py uses the same
+%% TOP-LEFT corner of the A4 page. scan_reader.py uses the same
 %% numbers: if you move anything here, change the constants there too.
 %%   registration marks : 6 mm squares centred on (10,10) (200,10) (10,287) (200,287)
-%%   student ID bubbles : x = 50 + 10*i (i=0..7), y = 68 + 6*d (d=0..9)
-%%   answer bubbles     : x = 42 + 9*k, codes 1 2 3 4 6 7
-%%   certainty bubbles  : x = 112 + 9*j, DC 0..5
+%%   student ID bubbles : x = 50 + 10*i (i=0..7), y = 68 + 6*r, row r = 0..9 labelled 1 2 3 4 5 6 7 8 9 0
+%%                        (digit 0 is the LAST row)
+%%   answer bubbles     : x = 42 + 9*k, columns A B C D n all
+%%   confidence bubbles  : x = 112 + 9*j, DC 0..5
 %%   row of question q  : y = 146 + 22*q (first line), +9 (correction line)
 %% Bubble radius 2 mm.
 %% =====================================================================
@@ -15,31 +16,31 @@
   % registration marks
   \foreach \px/\py in {10/10,200/10,10/287,200/287}{\fill[black] (\px-3,\py-3) rectangle (\px+3,\py+3);}
   % title and name
-  \node[font=\sffamily\bfseries\Large] at (105,20) {Answer sheet};
+  \node[font=\sffamily\bfseries\Large] at (105,20) {Answer sheet --- Quiz 1};
   \node[font=\sffamily\footnotesize,gray] at (105,27) {Fill the bubbles completely, with a dark pen. Do not fold.};
-  \draw[smart,fill=paper] (20,32) rectangle (190,44);
+  \draw[upsaclay,fill=paper] (20,32) rectangle (190,44);
   \node[anchor=west,font=\sffamily\small\bfseries] at (22,38) {Name and first name:};
   \node[anchor=west,font=\sffamily\small\bfseries] at (140,38) {Date:};
   % student ID
-  \node[anchor=west,font=\sffamily\small\bfseries,text=smart] at (20,50) {Student ID (8 digits)};
+  \node[anchor=west,font=\sffamily\small\bfseries,text=upsaclay] at (20,48.5) {Student ID (8 digits)};
   \foreach \i in {0,...,7}{
-    \draw (50+10*\i-3.5,53) rectangle (50+10*\i+3.5,60);
-    \foreach \d in {0,...,9}{ \bub{50+10*\i}{68+6*\d} }
+    \draw (50+10*\i-3.5,54.5) rectangle (50+10*\i+3.5,61.5);
+    \foreach \r in {0,...,9}{ \bub{50+10*\i}{68+6*\r} }
   }
-  \foreach \d in {0,...,9}{ \node[font=\sffamily\scriptsize] at (40,68+6*\d) {\d}; }
-  \draw[smart] (45,64.5) -- (125,64.5);
+  \foreach \d [count=\r from 0] in {1,2,3,4,5,6,7,8,9,0}{ \node[font=\sffamily\scriptsize] at (40,68+6*\r) {\d}; }
+  \draw[upsaclay] (45,64.5) -- (125,64.5);
   % instructions box
-  \node[anchor=north west,text width=52mm,font=\sffamily\scriptsize,align=left] at (135,54)
-    {\textbf{Student ID:} write your 8 digits in the boxes, then fill one bubble per column.\\[2mm]
-     \textbf{Answers:} one bubble per line for the answer (1--4, 6 = none, 7 = all) and one for the certainty (DC 0--5).\\[2mm]
+  \node[anchor=north west,text width=57mm,font=\sffamily\footnotesize,align=left] at (135,54)
+    {\hyphenpenalty=10000 \textbf{Student ID:} write your 8 digits in the boxes, then fill one bubble per column.\\[2mm]
+     \textbf{Answers:} one bubble per line for the answer (A--D, n = none of them, all = all of them) and one for the degree of confidence (DC 0--5; \textbf{DC 3} if you give none).\\[2mm]
      \textbf{Changing your mind:} fill the \emph{second line} of the question. It replaces the first line. Only one change is allowed.\\[2mm]
      \textbf{Do not} erase or use correction fluid on the first line.};
   % answer grid header
-  \node[font=\sffamily\small\bfseries,text=smart] at (63.5,132) {Answer};
-  \node[font=\sffamily\small\bfseries,text=smart] at (133.5,132) {Certainty (DC)};
-  \foreach \c [count=\k from 0] in {1,2,3,4,6,7}{ \node[font=\sffamily\small] at (42+9*\k,139) {\c}; }
+  \node[font=\sffamily\small\bfseries,text=upsaclay] at (63.5,132) {Answer};
+  \node[font=\sffamily\small\bfseries,text=upsaclay] at (133.5,132) {Confidence (DC)};
+  \foreach \c [count=\k from 0] in {A,B,C,D,n,all}{ \node[font=\sffamily\small] at (42+9*\k,139) {\c}; }
   \foreach \j in {0,...,5}{ \node[font=\sffamily\small] at (112+9*\j,139) {\j}; }
-  \draw[smart] (24,142) -- (166,142);
+  \draw[upsaclay] (24,142) -- (166,142);
   % rows
   \foreach \q in {0,...,4}{
     \pgfmathsetmacro{\ya}{146+22*\q}
@@ -50,7 +51,7 @@
     \node[font=\sffamily\tiny,gray] at (30,\yb) {2nd};
     \foreach \k in {0,...,5}{ \bub{42+9*\k}{\ya} \bub{42+9*\k}{\yb} }
     \foreach \j in {0,...,5}{ \bub{112+9*\j}{\ya} \bub{112+9*\j}{\yb} }
-    \draw[smart!40] (24,\yb+8.5) -- (166,\yb+8.5);
+    \draw[upsaclay!40] (24,\yb+8.5) -- (166,\yb+8.5);
   }
   \node[font=\sffamily\tiny,gray] at (105,262) {Print at 100\% (no page scaling). Scan flat, all four corner squares visible.};
   \IfFileExists{filled.tex}{\input{filled.tex}}{}

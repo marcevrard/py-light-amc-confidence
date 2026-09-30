@@ -1,16 +1,22 @@
 %% Page style, colours and text macros (used by the whole quiz).
 \usepackage[T1]{fontenc}
 \usepackage[table]{xcolor}
-\usepackage{array,amssymb,fancyhdr,titlesec,eso-pic,tikz}
-\definecolor{smart}{HTML}{E5543B}
+\usepackage{array,booktabs,amssymb,titlesec,eso-pic,tikz}
+\definecolor{upsaclay}{RGB}{99, 0, 60}
 \definecolor{paper}{HTML}{F4F4F0}
-\pagestyle{fancy}\fancyhf{}
-\renewcommand{\headrulewidth}{0.6pt}
-\fancyhead[L]{\small\textbf{SMART}-style quiz}
-\fancyhead[R]{\small Certainty degrees}
-\titleformat{\section}{\large\bfseries\color{smart}}{}{0pt}{}
+%% Header / footer (question pages). The answer sheet page is set to "empty".
+\usepackage{fancyhdr}
+\fancyhf{}
+\pagestyle{fancyplain}
+\usepackage{lastpage}
+\lhead{Master 1 -- Artificial Intelligence}
+\rhead{Hands-on Machine Learning}
+\lfoot{Universit\'e Paris-Saclay --- Marc Evrard}
+\rfoot{Page \thepage /\pageref{LastPage}}
+\titleformat{\section}{\large\bfseries\color{upsaclay}}{}{0pt}{}
 \titlespacing*{\section}{0pt}{1.4em}{.5em}
 \setlength{\parindent}{0pt}
 \renewcommand{\arraystretch}{1.35}
-\newcommand{\code}[1]{\textbf{\textcolor{smart}{#1}}}
-\newcommand{\opt}[2]{\hspace{2em}\textbf{#1}\,#2}
+\newcommand{\code}[1]{\textbf{\textcolor{upsaclay}{#1}}}
+%% One proposed answer per line: \opt{A}{text}  (the leading \\ starts the new line)
+\newcommand{\opt}[2]{\\\hspace{2em}\textbf{#1}\quad #2}
