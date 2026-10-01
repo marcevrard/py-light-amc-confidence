@@ -9,6 +9,8 @@ printed as a PDF with a **scannable answer sheet**, and graded automatically
 from scanned images with a small OpenCV script.
 
 - Write the questions, and mark the correct answers, in one Markdown file.
+- Unique **shuffled copy for each student** (questions and answers in a different
+  order), identified by a printed code on the answer sheet.
 - The PDF has three pages: instructions, questions, and a machine-readable
   answer sheet (student ID, one answer and one confidence degree per question,
   plus a second line to change their mind once).
@@ -53,7 +55,9 @@ py-light-amc-confidence/
 ├── CITATION.cff           citation metadata (GitHub "Cite this repository")
 ├── Makefile               make [QUIZ=folder]  ->  <folder>/quiz.pdf
 ├── defaults.yaml          pandoc settings shared by all quizzes
-├── scan_reader.py         scan -> student ID, answers, scores, CSV
+├── scan_reader.py         scan -> student ID, copy, answers, scores, CSV
+├── build_copies.py        one shuffled PDF per student
+├── quizcopy.py            shuffle logic shared by the two scripts
 ├── content/
 │   ├── instructions.md      rules shown to students (page 1)
 │   └── questions-begin.md   questions page heading and spacing (page 2)
@@ -67,16 +71,20 @@ py-light-amc-confidence/
 ├── examples/
 │   └── simple/            small general-knowledge example, kept in the repo
 │       ├── meta.tex         title, headers, footer
+│       ├── seed.txt         master seed of the shuffle
 │       ├── questions.md     questions + answer key
 │       └── quiz.pdf         example output
 └── quizzes/               your real quizzes (ignored by git, see below)
     └── quiz-1/
         ├── meta.tex
         ├── questions.md
-        └── quiz.pdf
+        ├── seed.txt         master seed (keep it!)
+        ├── quiz.pdf         unshuffled version (copy 0)
+        └── copies/          shuffled copies, made by `make copies`
 ```
 
-A quiz is just a folder with two files: `meta.tex` and `questions.md`.
+A quiz is just a folder with two files: `meta.tex` and `questions.md`
+(`seed.txt` is added when you make shuffled copies).
 
 ## Requirements
 
@@ -114,6 +122,39 @@ The PDF has three pages:
 3. **Answer sheet**: the scannable page (no header or footer).
 
 Extra pandoc options can be passed with `PANDOC_FLAGS="..."`.
+
+## Shuffled copies, one per student
+
+```
+make copies QUIZ=quizzes/quiz-1 N=30     # copies 1..30
+```
+
+or `python3 build_copies.py quizzes/quiz-1 30 [--first 31]`. This writes, in
+`quizzes/quiz-1/copies/`: `copy-001.pdf` ..., `all-copies.pdf` (everything in one
+file for printing, needs `pdfunite`) and `index.csv` (the order of each copy).
+
+- **What is shuffled:** the order of the questions, and the order of the four
+  proposed answers A to D inside each question. `n` and `all` never move.
+  Numbering and letters are printed again from 1 and from A in each copy.
+- **Copy number:** copy 0 is the quiz as written (this is what plain `make`
+  builds). Copies 1 to 1023 are shuffled. The number is printed in the footer of
+  the question pages and on the answer sheet, as a small **binary strip** along
+  the top edge (a sentinel, 10 bits and a parity bit). It is pre-printed, so
+  students have nothing to fill in, and the reader checks the sentinel and the
+  parity.
+- **Master seed:** the shuffle only depends on the master seed in
+  `<quiz folder>/seed.txt` and on the copy number. The file is created (random)
+  the first time you make copies. **Keep it**: the reader needs it to undo the
+  shuffle, and without it the copies cannot be regenerated. The `examples/simple`
+  seed is public, so use your own seed for a real exam.
+- **Marking:** `scan_reader.py` decodes the copy number of each sheet, rebuilds
+  its shuffle from the seed, maps the student's letters back to the original
+  questions and answers, and scores them with the key in `questions.md`. The key
+  is written only once, in the original order.
+
+Give each student a different copy (for example by seat number) and keep a list
+of who got which number. The ID the student writes on the sheet is independent of
+the copy number.
 
 ## Create your own quiz
 
@@ -162,7 +203,7 @@ if you do want to publish them.
 
 ## Print and scan
 
-1. Print `quiz.pdf` on A4 at **100 %** (no page scaling). The four black squares
+1. Print `quiz.pdf` (or the copies) on A4 at **100 %** (no page scaling). The four black squares
    in the corners of the answer sheet are the registration marks and must be
    printed.
 2. Students fill the bubbles completely with a dark **pen**: the 8-digit student
@@ -187,13 +228,15 @@ python scan_reader.py scans/ --quiz quizzes/quiz-1 --csv results.csv
 ```
 
 `--quiz` is the quiz folder (or its `questions.md`): the answer key is read
-from it.
+from it, and the master seed from its `seed.txt`.
 
 | Option | Effect |
 |--------|--------|
 | `inputs…` | image files and/or folders (`.png .jpg .jpeg .tif .tiff .bmp`) |
 | `--quiz PATH` | quiz folder, or the questions file, holding the answer key |
-| `--key C,n,all,D,B` | give the key directly instead of `--quiz` |
+| `--key C,n,all,D,B` | give the key directly instead of `--quiz` (copy 0 only, no shuffle) |
+| `--seed S` | master seed, if `seed.txt` is not in the quiz folder |
+| `--copy N` | force the copy number when the printed code cannot be read |
 | `--recursive` | also search sub-folders |
 | `--csv FILE` | write the results; the name gets a timestamp, `results_20260930-142530.csv` |
 | `--no-timestamp` | keep the CSV name as given |
@@ -202,9 +245,11 @@ from it.
 | `--ink-delta N` | grey levels below the paper that count as ink (default 40) |
 | `--fill-min X` | share of a bubble that must be inked to count as ticked (default 0.25) |
 
-The console prints one line per sheet (ID, total, grade and flags) and the CSV
-has one row per sheet: file, student ID, then answer / DC / points for each
-question, the total and the flags. Try it on the example:
+The console prints one line per sheet (ID, copy, total, grade and flags) and the
+CSV has one row per sheet: file, student ID, copy number, then answer / DC /
+points for each question, the total and the flags. The answer shown is the
+letter the student marked on **their own copy**; the points are computed after
+mapping it back to the original question. Try it on the example:
 `python scan_reader.py scans/ --quiz examples/simple`.
 
 ### What the reader decides
@@ -216,6 +261,10 @@ question, the total and the flags. Try it on the example:
 - Several bubbles ticked in the same group give "multiple marks": no answer for
   that group (flagged). An unreadable ID digit is shown as `?`.
 - A missing or unreadable DC is scored as **DC 3** and flagged.
+- If the copy code cannot be read (damaged strip, wrong parity, sheet printed
+  before the strip existed), the sheet is **not scored** and flagged
+  `not scored: use --copy N`. Look at the copy number printed next to the strip
+  and rerun that sheet with `--copy N`.
 - Debug images (`*.debug.png`) are skipped automatically on later runs.
 
 ## Sheet geometry
@@ -223,7 +272,7 @@ question, the total and the flags. Try it on the example:
 The reader locates bubbles from fixed millimetre coordinates on the A4 page,
 relative to the four registration squares. The numbers are documented at the top
 of `template/answer-sheet.tex` and repeated as constants at the top of
-`scan_reader.py` (`id_xy`, `ans_xy`, `dc_xy`, `MARKS`). **If you move anything on
+`scan_reader.py` (`id_xy`, `ans_xy`, `dc_xy`, `code_xy`, `MARKS`). **If you move anything on
 the sheet, change both places.** Student ID digits are ordered 1 to 9 then 0
 (0 is the last row).
 
@@ -289,6 +338,12 @@ references below. Every source file carries a short copyright and license header
 - Tested on rendered sheets with simulated marks, distortion and noise, and on
   one real pencil scan of an earlier version of the sheet. Do a full print, fill,
   scan and read run with your printer and scanner before a real exam.
-- Sheets printed from an older layout (numbered answers, ID digit 0 first) are
-  not read correctly by the current reader.
+- Sheets printed from an older layout (numbered answers, ID digit 0 first, ID
+  matrix at the old position, or without the copy strip) are not read
+  correctly by the current reader.
+- The shuffle is a function of the seed and the copy number, using Python's
+  `random` module. Keep `seed.txt` with the quiz; do not mix copies made with
+  different seeds in one batch of scans.
+- Questions that refer to other options ("A and B", "all of the above" written
+  as an option) do not survive shuffling: use the implicit `n` and `all`.
 - Scans must show all four corner squares; otherwise the sheet is skipped.

@@ -10,6 +10,9 @@
 %%   answer bubbles     : x = 42 + 9*k, columns A B C D n all
 %%   confidence bubbles  : x = 112 + 9*j, DC 0..5
 %%   row of question q  : y = 146 + 22*q (first line), +9 (correction line)
+%%   copy code strip    : 12 squares (3 mm) at x = 61 + 8*j (j=0..11), y = 10: sentinel (always dark),
+%%                        10 bits MSB first, even-parity bit; dark square = 1. Pre-printed per copy
+%%                        (\quizbits, \quizcopy come from build_copies.py; absent = copy 0, no label)
 %% Bubble radius 2 mm.
 %% =====================================================================
 \newcommand{\bub}[2]{\draw[line width=.4pt] (#1,#2) circle[radius=2mm];}
@@ -17,6 +20,17 @@
 \begin{tikzpicture}[overlay,x=1mm,y=-1mm,every node/.style={font=\sffamily}]
   % registration marks
   \foreach \px/\py in {10/10,200/10,10/287,200/287}{\fill[black] (\px-3,\py-3) rectangle (\px+3,\py+3);}
+  % copy code (pre-printed, not filled by students)
+  \ifdefined\quizbits\else\def\quizbits{1,0,0,0,0,0,0,0,0,0,0,0}\fi
+  \foreach \b [count=\j from 0] in \quizbits{%
+    \ifnum\b=1
+      \fill[black] (61+8*\j-1.5,8.5) rectangle (61+8*\j+1.5,11.5);
+    \else
+      \draw[line width=.3pt,black!50] (61+8*\j-1.5,8.5) rectangle (61+8*\j+1.5,11.5);
+    \fi}
+  \ifdefined\quizcopy
+    \node[anchor=east,font=\sffamily\footnotesize,upsaclay] at (57,10) {Copy \quizcopy};
+  \fi
   % title and name
   \node[font=\sffamily\bfseries\Large] at (105,18) {Answer sheet --- \quiztitle};
   \node[font=\sffamily,upsaclay] at (105,26.5) {Fill the bubbles \textbf{completely}, with a \textbf{dark pen}. Do not fold.};

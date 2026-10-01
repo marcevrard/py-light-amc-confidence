@@ -15,6 +15,7 @@
 \lhead{\quizlhead}
 \rhead{\quizrhead}
 \lfoot{\quizlfoot}
+\cfoot{\ifdefined\quizcopy Copy \quizcopy\fi}%% set per copy by build_copies.py
 \rfoot{Page \thepage /\pageref{LastPage}}
 \titleformat{\section}{\large\bfseries\color{upsaclay}}{}{0pt}{}
 \titlespacing*{\section}{0pt}{1.4em}{.5em}

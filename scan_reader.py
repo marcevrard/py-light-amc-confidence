@@ -18,7 +18,12 @@ Usage:
 The answer key is read from the quiz folder given with --quiz (its questions.md:
 \\optc{C}{...} marks the correct proposed answer, \\correct{n} or \\correct{all}
 the implicit ones). --quiz also accepts the questions file itself. Alternatively
-give the key directly with --key C,n,all,D,B.
+give the key directly with --key C,n,all,D,B (unshuffled copy 0 only).
+
+Shuffled copies: every sheet carries its copy number as a printed binary strip.
+The reader decodes it and, with the master seed from <quiz folder>/seed.txt (or
+--seed), undoes the shuffle of questions and answers before scoring (quizcopy.py).
+A sheet whose strip cannot be read is not scored: rerun it with --copy N.
 
 Inputs can be image files and/or folders; a folder is scanned for images
 (add --recursive to include its sub-folders). With --debug, a
@@ -40,6 +45,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+import quizcopy
+
 # ---- geometry (must match template/answer-sheet.tex) ---------------------------
 MARKS = [(10, 10), (200, 10), (10, 287), (200, 287)]  # TL, TR, BL, BR centres
 PAGE_W, PAGE_H = 210, 297
@@ -49,6 +56,12 @@ ANS_CODES = [1, 2, 3, 4, 6, 7]  # internal codes, in the order of the sheet colu
 LABELS = {1: "A", 2: "B", 3: "C", 4: "D", 6: "n", 7: "all"}  # what the sheet prints
 CODE_OF = {v.lower(): k for k, v in LABELS.items()}
 N_Q, N_DIGITS = 5, 8
+CODE_R = 1.0  # mm, inner disk read in each 3 mm square of the copy code strip
+
+
+def code_xy(j):
+    """Square j (0..11) of the copy code strip: sentinel, 10 bits, parity."""
+    return 61 + 8 * j, 10
 
 
 def id_xy(i, d):
@@ -56,21 +69,17 @@ def id_xy(i, d):
     return 40 + 10 * i, 68 + 6 * ((d - 1) % 10)
 
 
+def load_quiz(path):
+    """Questions (parsed) and master seed from a quiz folder or its questions.md."""
+    path = Path(path)
+    qfile = path / "questions.md" if path.is_dir() else path
+    questions = quizcopy.parse_questions(qfile.read_text(encoding="utf-8"), str(qfile))
+    return questions, quizcopy.read_seed(qfile.parent)
+
+
 def key_from_questions(path):
-    """Read the answer key from the question file: one correct answer per question."""
-    text = Path(path).read_text(encoding="utf-8")
-    blocks = re.split(r"\*\*Question\s+\d+\.\*\*", text)[1:]
-    pattern = re.compile(r"\\optc\{([A-Da-d])\}|\\correct\{(n|all)\}")
-    key = []
-    for number, block in enumerate(blocks, 1):
-        found = [a or b for a, b in pattern.findall(block)]
-        if len(found) != 1:
-            raise ValueError(
-                f"{path}: question {number} needs exactly one correct answer "
-                f"(\\optc or \\correct), found {len(found)}"
-            )
-        key.append(parse_answer(found[0]))
-    return key
+    """Answer key (codes 1-4, 6, 7) of the original questions, from questions.md."""
+    return [parse_answer(q.key) for q in load_quiz(path)[0]]
 
 
 def parse_answer(text):
@@ -158,11 +167,11 @@ def paper_level(page):
     return float(np.median(page))
 
 
-def fill_ratio(page, x_mm, y_mm, level):
-    """Share of pixels darker than `level` in the bubble centred at (x_mm, y_mm)."""
+def fill_ratio(page, x_mm, y_mm, level, radius=R_READ):
+    """Share of pixels darker than `level` in the disk centred at (x_mm, y_mm)."""
     cx, cy = int(x_mm * PX_PER_MM), int(y_mm * PX_PER_MM)
     mask = np.zeros(page.shape, np.uint8)
-    cv2.circle(mask, (cx, cy), int(R_READ * PX_PER_MM), 255, -1)
+    cv2.circle(mask, (cx, cy), int(radius * PX_PER_MM), 255, -1)
     return float((page[mask > 0] < level).mean())
 
 
@@ -181,8 +190,17 @@ def pick(ratios, tuning):
     return None, "multiple marks"
 
 
+def read_copy_code(page, level):
+    """Decode the printed copy strip -> (copy number or None, flag)."""
+    ratios = [fill_ratio(page, *code_xy(j), level, CODE_R) for j in range(quizcopy.N_BITS + 2)]
+    if any(0.25 < r < 0.6 for r in ratios):
+        return None, "copy code unclear"
+    copy = quizcopy.decode_bits([int(r >= 0.6) for r in ratios])
+    return copy, "" if copy is not None else "copy code invalid"
+
+
 def read_sheet(img, tuning):
-    """Return (student ID, rows, flags, rectified page) for one scanned sheet."""
+    """Return (student ID, rows, flags, rectified page, copy number) for one sheet."""
     page = rectify(img)
     level = paper_level(page) - tuning.ink_delta
     flags = []
@@ -205,7 +223,10 @@ def read_sheet(img, tuning):
             c, flag_c = pick(ratios_c, tuning)
             line.append((None if a is None else ANS_CODES[a], c, flag_a, flag_c))
         rows.append(line)
-    return "".join(digits), rows, flags, page
+    copy, copy_flag = read_copy_code(page, level)
+    if copy is None:
+        flags.append(copy_flag)
+    return "".join(digits), rows, flags, page, copy
 
 
 def final_choice(line):
@@ -239,6 +260,7 @@ def debug_image(page, path, tuning):
         for ln in (0, 1):
             pts += [ans_xy(q, ln, k) for k in range(6)]
             pts += [dc_xy(q, ln, j) for j in range(6)]
+    pts += [code_xy(j) for j in range(quizcopy.N_BITS + 2)]
     for x, y in pts:
         r = fill_ratio(page, x, y, level)
         if r >= tuning.filled:
@@ -284,7 +306,9 @@ def main():
     ap.add_argument("inputs", nargs="+", help="image files and/or folders")
     ap.add_argument("--recursive", action="store_true", help="also search sub-folders")
     ap.add_argument("--quiz", help="quiz folder (or its questions.md) holding the key")
-    ap.add_argument("--key", help="override the key, e.g. C,n,all,D,B")
+    ap.add_argument("--key", help="override the key, e.g. C,n,all,D,B (copy 0 only)")
+    ap.add_argument("--seed", help="master seed (default: <quiz folder>/seed.txt)")
+    ap.add_argument("--copy", type=int, help="force the copy number instead of reading it")
     ap.add_argument("--csv", help="write results to this CSV file")
     ap.add_argument("--debug", action="store_true", help="save <image>.debug.png")
     ap.add_argument("--no-timestamp", action="store_true", help="keep the CSV name")
@@ -299,12 +323,14 @@ def main():
     if args.fill_min is not None:
         tuning = replace(tuning, filled=args.fill_min, doubt=args.fill_min / 2)
 
+    questions, seed = None, args.seed
     try:
         if args.key:
             key = [parse_answer(k) for k in args.key.split(",")]
         elif args.quiz:
-            path = Path(args.quiz)
-            key = key_from_questions(path / "questions.md" if path.is_dir() else path)
+            questions, quiz_seed = load_quiz(args.quiz)
+            seed = seed or quiz_seed
+            key = [parse_answer(q.key) for q in questions]
         else:
             sys.exit("give the key: --quiz FOLDER (or FILE), or --key C,n,all,D,B")
     except (ValueError, OSError) as e:
@@ -323,15 +349,31 @@ def main():
             print(f"{path}: cannot read image")
             continue
         try:
-            sid, rows, flags, page = read_sheet(img, tuning)
+            sid, rows, flags, page, copy = read_sheet(img, tuning)
         except ValueError as e:
             print(f"{path}: {e}")
             continue
-        total, cells = 0, []
+        if args.copy is not None:
+            copy = args.copy
+            flags = [f for f in flags if not f.startswith("copy code")]
+        total, cells, scored = 0, [], copy is not None
+        if scored and copy != 0 and (questions is None or seed is None):
+            flags.append(f"copy {copy}: needs --quiz and its seed (seed.txt or --seed)")
+            scored = False
+        if scored:
+            qorder, oorders = quizcopy.layout(N_Q, seed, copy)
+        elif copy is None:
+            flags.append("not scored: use --copy N")
         for q, line in enumerate(rows):
             ans, dc, notes = final_choice(line)
-            points = score(ans, dc, key[q])
-            total += points
+            points = ""
+            if scored:
+                if ans is not None:
+                    o, code = quizcopy.original_answer(ans, q, qorder, oorders)
+                    points = score(code, dc, key[o])
+                else:
+                    points = 0
+                total += points
             flags += [f"Q{q + 1}: {n}" for n in notes]
             if ans is None:
                 flags.append(f"Q{q + 1}: no answer")
@@ -339,16 +381,18 @@ def main():
                 note = f"no confidence degree (scored as DC {DEFAULT_DC})"
                 flags.append(f"Q{q + 1}: {note}")
             cells += [LABELS.get(ans, ""), dc, points]
-        table.append([str(path), sid] + cells + [total, "; ".join(flags)])
-        grade = max(0, total) / (N_Q * 20) * 20
-        line = f"{path}  ID={sid}  total={total}/{20 * N_Q}  grade={grade:.1f}/20"
+        total = total if scored else ""
+        table.append([str(path), sid, "" if copy is None else copy] + cells + [total, "; ".join(flags)])
+        grade = f"{max(0, total) / (N_Q * 20) * 20:.1f}/20" if scored else "-"
+        shown = "?" if copy is None else copy
+        line = f"{path}  ID={sid}  copy={shown}  total={total if scored else '-'}/{20 * N_Q}  grade={grade}"
         print(line + (f"  [{'; '.join(flags)}]" if flags else ""))
         if args.debug:
             debug_image(page, path.with_name(f"{path.stem}.debug.png"), tuning)
 
     print(f"{len(table)} sheet(s) read, {len(images) - len(table)} skipped")
     if args.csv and table:
-        header = ["file", "student_id"]
+        header = ["file", "student_id", "copy"]
         for q in range(1, N_Q + 1):
             header += [f"q{q}_answer", f"q{q}_dc", f"q{q}_points"]
         out_path = Path(args.csv)
