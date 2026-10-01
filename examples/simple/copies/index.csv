@@ -1,4 +1,4 @@
-copy,printed_q1=orig:options,printed_q2=orig:options,printed_q3=orig:options,printed_q4=orig:options,printed_q5=orig:options
-1,1:BADC,2:BCDA,4:ABCD,5:CBAD,3:ABCD
-2,4:BDAC,1:DABC,5:CDBA,2:BDCA,3:BDAC
-3,2:ACBD,4:CBDA,1:DCAB,5:DBAC,3:CDAB
+copy,printed_q1=orig:options,printed_q2=orig:options,printed_q3=orig:options,printed_q4=orig:options,printed_q5=orig:options,"correct_on_this_copy (n=none, a=all)"
+1,1:BACD,2:BCDA,4:ADBC,5:CADB,3:ABCD,CnBDa
+2,4:BDAC,1:DABC,5:BCDA,2:BDCA,3:BDAC,BDAna
+3,2:ACBD,4:DCBA,1:DABC,5:DABC,3:CDAB,nADCa

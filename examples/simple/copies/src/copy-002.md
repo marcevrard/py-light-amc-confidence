@@ -11,9 +11,9 @@
 \opt{D}{Paris}
 
 **Question 3.** The chemical symbol of gold is
-\opt{A}{Gd}
-\opt{B}{Go}
-\opt{C}{Au}
+\opt{A}{Au}
+\opt{B}{Gd}
+\opt{C}{Go}
 \opt{D}{Ag}
 
 **Question 4.** The capital of Italy is

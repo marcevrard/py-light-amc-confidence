@@ -361,7 +361,7 @@ def main():
             flags.append(f"copy {copy}: needs --quiz and its seed (seed.txt or --seed)")
             scored = False
         if scored:
-            qorder, oorders = quizcopy.layout(N_Q, seed, copy)
+            qorder, oorders = quizcopy.layout(questions, seed, copy)
         elif copy is None:
             flags.append("not scored: use --copy N")
         for q, line in enumerate(rows):

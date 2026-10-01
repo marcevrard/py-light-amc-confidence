@@ -72,21 +72,39 @@ def read_seed(folder):
     return path.read_text().strip() if path.is_file() else None
 
 
-def layout(n_questions, seed, copy):
+def layout(questions, seed, copy):
     """Return (qorder, oorders) for a copy.
 
     qorder[i]      = original index of the question printed at position i;
     oorders[o][j]  = original option index (0-3) printed at position j of the
                      question whose original index is o.
+
+    The correct letters are balanced: the questions whose answer is one of A-D
+    get their correct option placed at positions drawn without repetition (so no
+    letter is the answer of two questions), as long as there are at most 4 such
+    questions; with more, every letter is used once before any is reused.
     """
+    n = len(questions)
     if copy == 0:
-        return list(range(n_questions)), [[0, 1, 2, 3] for _ in range(n_questions)]
+        return list(range(n)), [[0, 1, 2, 3] for _ in range(n)]
     rng = random.Random(f"{seed}:{copy}")
-    qorder = sorted(range(n_questions), key=lambda _: rng.random())
+    qorder = sorted(range(n), key=lambda _: rng.random())
+    # target position (0-3) of the correct option, for the questions keyed A-D
+    lettered = [o for o, q in enumerate(questions) if q.key in LETTERS]
+    rng_pos = random.Random(f"{seed}:{copy}:positions")
+    pool = []
+    while len(pool) < len(lettered):
+        pool += sorted(range(4), key=lambda _: rng_pos.random())
+    target = dict(zip(lettered, pool))
     oorders = []
-    for o in range(n_questions):
+    for o, q in enumerate(questions):
         rng_o = random.Random(f"{seed}:{copy}:q{o}")
-        oorders.append(sorted(range(4), key=lambda _: rng_o.random()))
+        order = sorted(range(4), key=lambda _: rng_o.random())
+        if o in target:
+            right = LETTERS.index(q.key)
+            order.remove(right)
+            order.insert(target[o], right)
+        oorders.append(order)
     return qorder, oorders
 
 
@@ -95,7 +113,7 @@ def render_copy(questions, seed, copy):
 
     The answer key markers are dropped: the copy only holds what students see.
     """
-    qorder, oorders = layout(len(questions), seed, copy)
+    qorder, oorders = layout(questions, seed, copy)
     out = []
     for i, o in enumerate(qorder, 1):
         q = questions[o]

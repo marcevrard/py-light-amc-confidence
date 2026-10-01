@@ -5,21 +5,21 @@
 \opt{D}{Madrid}
 
 **Question 2.** The largest planet of the Solar System is
-\opt{A}{Saturn}
-\opt{B}{Venus}
-\opt{C}{Jupiter}
+\opt{A}{Jupiter}
+\opt{B}{Saturn}
+\opt{C}{Venus}
 \opt{D}{Mars}
 
 **Question 3.** The capital of France is
 \opt{A}{Nice}
-\opt{B}{Paris}
-\opt{C}{Lille}
-\opt{D}{Lyon}
+\opt{B}{Lille}
+\opt{C}{Lyon}
+\opt{D}{Paris}
 
 **Question 4.** The chemical symbol of gold is
 \opt{A}{Go}
-\opt{B}{Au}
-\opt{C}{Ag}
+\opt{B}{Ag}
+\opt{C}{Au}
 \opt{D}{Gd}
 
 **Question 5.** The United Kingdom comprises

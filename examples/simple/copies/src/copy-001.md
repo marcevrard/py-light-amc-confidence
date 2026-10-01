@@ -1,8 +1,8 @@
 **Question 1.** The capital of France is
 \opt{A}{Lyon}
 \opt{B}{Lille}
-\opt{C}{Nice}
-\opt{D}{Paris}
+\opt{C}{Paris}
+\opt{D}{Nice}
 
 **Question 2.** The capital of Italy is
 \opt{A}{Prague}
@@ -12,15 +12,15 @@
 
 **Question 3.** The largest planet of the Solar System is
 \opt{A}{Mars}
-\opt{B}{Venus}
-\opt{C}{Saturn}
-\opt{D}{Jupiter}
+\opt{B}{Jupiter}
+\opt{C}{Venus}
+\opt{D}{Saturn}
 
 **Question 4.** The chemical symbol of gold is
 \opt{A}{Gd}
-\opt{B}{Au}
-\opt{C}{Ag}
-\opt{D}{Go}
+\opt{B}{Ag}
+\opt{C}{Go}
+\opt{D}{Au}
 
 **Question 5.** The United Kingdom comprises
 \opt{A}{England}

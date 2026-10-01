@@ -100,10 +100,15 @@ def main():
         if subprocess.run(cmd, cwd=ROOT).returncode:
             sys.exit(f"pandoc failed for copy {copy}")
         pdfs.append(pdf)
-        qorder, oorders = qc.layout(len(questions), seed, copy)
+        qorder, oorders = qc.layout(questions, seed, copy)
         row = [copy]
         for o in qorder:
             row.append(f"{o + 1}:" + "".join(qc.LETTERS[idx] for idx in oorders[o]))
+        # correct answer of each printed question, as the student sees it
+        row.append("".join(
+            qc.LETTERS[oorders[o].index(qc.LETTERS.index(questions[o].key))]
+            if questions[o].key in qc.LETTERS else questions[o].key[0]
+            for o in qorder))
         index_rows.append(row)
         print(f"{pdf}")
 
@@ -112,7 +117,7 @@ def main():
     with index.open("a", newline="") as f:
         w = csv.writer(f)
         if new:
-            w.writerow(["copy"] + [f"printed_q{i}=orig:options" for i in range(1, len(questions) + 1)])
+            w.writerow(["copy"] + [f"printed_q{i}=orig:options" for i in range(1, len(questions) + 1)] + ["correct_on_this_copy (n=none, a=all)"])
         w.writerows(index_rows)
     if not args.no_merge:
         merged = out / "all-copies.pdf"

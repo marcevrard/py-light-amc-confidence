@@ -140,6 +140,12 @@ order of each copy).
 - **What is shuffled:** the order of the questions, and the order of the four
   proposed answers A to D inside each question. `n` and `all` never move.
   Numbering and letters are printed again from 1 and from A in each copy.
+- **Balanced correct letters:** inside a copy, the correct options of the
+  questions whose answer is A to D are placed at different letters, so no letter
+  is the answer of two questions. With more than four such questions every
+  letter is used once before any is reused (5 questions: one letter appears
+  twice, never more). Questions whose answer is `n` or `all` are not counted.
+  `index.csv` lists the correct answers of each copy as the students see them.
 - **Copy number:** copy 0 is the quiz as written (this is what plain `make`
   builds). Copies 1 to 1023 are shuffled. The number is printed in the footer of
   the question pages and on the answer sheet, as a small **binary strip** along
@@ -345,8 +351,10 @@ references below. Every source file carries a short copyright and license header
 - Sheets printed from an older layout (numbered answers, ID digit 0 first, ID
   matrix at the old position, or without the copy strip) are not read
   correctly by the current reader.
-- The shuffle is a function of the seed and the copy number, using Python's
-  `random` module. Keep `seed.txt` with the quiz; do not mix copies made with
+- The shuffle is a function of the seed, the copy number **and the answer key**,
+  using Python's `random` module. Copies printed before the letters were
+  balanced (or after changing the key or the questions) must not be marked with
+  the new code: rebuild them first. Keep `seed.txt` with the quiz; do not mix copies made with
   different seeds in one batch of scans.
 - Questions that refer to other options ("A and B", "all of the above" written
   as an option) do not survive shuffling: use the implicit `n` and `all`.
