@@ -11,7 +11,8 @@
 
 Output, in <quiz folder>/copies/:
   copy-001.pdf ...   one 3-page PDF per copy (instructions, questions, answer sheet)
-  all-copies.pdf     the copies of this run in one file for printing (pdfunite, or qpdf)
+  all-copies.pdf     the copies of this run in one file for printing (pdfunite, or qpdf),
+                     with a blank page after each copy (--no-blank to skip it)
   index.csv          for each copy: original question printed at each position
   src/               the generated markdown and header of each copy
 
@@ -35,6 +36,26 @@ import quizcopy as qc
 ROOT = Path(__file__).resolve().parent
 
 
+def write_blank_a4(path):
+    """Write a one-page blank A4 PDF (no dependency): used as a separator."""
+    objs = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.276 841.89] >>",
+    ]
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for i, body in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n".encode()
+    for off in offsets:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += f"trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    Path(path).write_bytes(bytes(out))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("quiz", help="quiz folder (meta.tex, questions.md)")
@@ -42,6 +63,7 @@ def main():
     ap.add_argument("--first", type=int, default=1, help="first copy number (1)")
     ap.add_argument("--pandoc-flags", default=os.environ.get("PANDOC_FLAGS", ""))
     ap.add_argument("--no-merge", action="store_true", help="skip all-copies.pdf")
+    ap.add_argument("--no-blank", action="store_true", help="no blank page after each copy")
     args = ap.parse_args()
 
     quiz = Path(args.quiz)
@@ -94,7 +116,14 @@ def main():
         w.writerows(index_rows)
     if not args.no_merge:
         merged = out / "all-copies.pdf"
-        files = [str(p) for p in pdfs]
+        files = []
+        if args.no_blank:
+            files = [str(p) for p in pdfs]
+        else:  # blank page after each copy: duplex printing starts every copy on a front side
+            blank = src / "blank.pdf"
+            write_blank_a4(blank)
+            for p in pdfs:
+                files += [str(p), str(blank)]
         if shutil.which("pdfunite"):
             cmd = ["pdfunite", *files, str(merged)]
         elif shutil.which("qpdf"):

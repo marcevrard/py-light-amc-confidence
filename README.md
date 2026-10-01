@@ -131,8 +131,10 @@ make copies QUIZ=quizzes/quiz-1 N=30     # copies 1..30
 
 or `python3 build_copies.py quizzes/quiz-1 30 [--first 31]`. This writes, in
 `quizzes/quiz-1/copies/`: `copy-001.pdf` ..., `all-copies.pdf` (the copies of the
-run merged in one file for printing; made by default with `pdfunite` from
-poppler, or `qpdf` if that is missing; `MERGE=0` skips it) and `index.csv` (the
+run merged in one file for printing, with a **blank page after each copy** so
+that double-sided printing starts every copy on a front side; made by default
+with `pdfunite` from poppler, or `qpdf` if that is missing; `MERGE=0` skips the
+merge and `BLANK=0` the blank pages) and `index.csv` (the
 order of each copy).
 
 - **What is shuffled:** the order of the questions, and the order of the four

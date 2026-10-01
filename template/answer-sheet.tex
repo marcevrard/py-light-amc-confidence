@@ -9,7 +9,8 @@
 %%                        (digit 0 is the LAST row)
 %%   answer bubbles     : x = 42 + 9*k, columns A B C D n all
 %%   confidence bubbles  : x = 112 + 9*j, DC 0..5
-%%   row of question q  : y = 146 + 22*q (first line), +9 (correction line)
+%%   row of question q  : y = 146 + 22*q (first line), +9 (correction line); column labels
+%%                        (A B C D n all / 0-5) are repeated at y + 4.5, between the two lines
 %%   copy code strip    : 12 squares (3 mm) at x = 61 + 8*j (j=0..11), y = 10: sentinel (always dark),
 %%                        10 bits MSB first, even-parity bit; dark square = 1. Pre-printed per copy
 %%                        (\quizbits, \quizcopy come from build_copies.py; absent = copy 0, no label)
@@ -63,6 +64,9 @@
     \pgfmathsetmacro{\yb}{155+22*\q}
     \fill[paper] (24,\yb-4.5) rectangle (166,\yb+4.5);
     \node[font=\sffamily\bfseries\large] at (17,\ya+4.5) {\the\numexpr\q+1\relax};
+    % reminder of the columns between the two lines of the row (outside the bubbles, never read)
+    \foreach \c [count=\k from 0] in {A,B,C,D,n,all}{ \node[font=\sffamily\scriptsize,black!70] at (42+9*\k,\ya+4.5) {\c}; }
+    \foreach \j in {0,...,5}{ \node[font=\sffamily\scriptsize,black!70] at (112+9*\j,\ya+4.5) {\j}; }
     \node[font=\sffamily\tiny,gray] at (30,\ya) {1st};
     \node[font=\sffamily\tiny,gray] at (30,\yb) {2nd};
     \foreach \k in {0,...,5}{ \bub{42+9*\k}{\ya} \bub{42+9*\k}{\yb} }
