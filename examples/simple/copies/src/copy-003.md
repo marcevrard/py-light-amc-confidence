@@ -1,0 +1,29 @@
+**Question 1.** The capital of Italy is
+\opt{A}{Berlin}
+\opt{B}{Tokyo}
+\opt{C}{Prague}
+\opt{D}{Madrid}
+
+**Question 2.** The largest planet of the Solar System is
+\opt{A}{Saturn}
+\opt{B}{Venus}
+\opt{C}{Jupiter}
+\opt{D}{Mars}
+
+**Question 3.** The capital of France is
+\opt{A}{Nice}
+\opt{B}{Paris}
+\opt{C}{Lille}
+\opt{D}{Lyon}
+
+**Question 4.** The chemical symbol of gold is
+\opt{A}{Go}
+\opt{B}{Au}
+\opt{C}{Ag}
+\opt{D}{Gd}
+
+**Question 5.** The United Kingdom comprises
+\opt{A}{Wales}
+\opt{B}{Northern Ireland}
+\opt{C}{England}
+\opt{D}{Scotland}

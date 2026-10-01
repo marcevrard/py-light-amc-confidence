@@ -130,8 +130,10 @@ make copies QUIZ=quizzes/quiz-1 N=30     # copies 1..30
 ```
 
 or `python3 build_copies.py quizzes/quiz-1 30 [--first 31]`. This writes, in
-`quizzes/quiz-1/copies/`: `copy-001.pdf` ..., `all-copies.pdf` (everything in one
-file for printing, needs `pdfunite`) and `index.csv` (the order of each copy).
+`quizzes/quiz-1/copies/`: `copy-001.pdf` ..., `all-copies.pdf` (the copies of the
+run merged in one file for printing; made by default with `pdfunite` from
+poppler, or `qpdf` if that is missing; `MERGE=0` skips it) and `index.csv` (the
+order of each copy).
 
 - **What is shuffled:** the order of the questions, and the order of the four
   proposed answers A to D inside each question. `n` and `all` never move.

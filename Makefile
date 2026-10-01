@@ -4,6 +4,7 @@
 #                     make QUIZ=quizzes/quiz-1  (your own quiz)
 # A quiz folder holds meta.tex (title, headers, footer) and questions.md.
 # Shuffled copies, one per student: make copies QUIZ=quizzes/quiz-1 N=30
+# (also merged into <quiz>/copies/all-copies.pdf with pdfunite; MERGE=0 to skip)
 QUIZ ?= examples/simple
 PANDOC_FLAGS ?=
 PDF  := $(QUIZ)/quiz.pdf
@@ -16,7 +17,7 @@ $(PDF): $(SRC)
 
 copies:
 	@test -n "$(N)" || { echo "usage: make copies QUIZ=folder N=number-of-copies"; exit 1; }
-	python3 build_copies.py $(QUIZ) $(N) --pandoc-flags "$(PANDOC_FLAGS)"
+	python3 build_copies.py $(QUIZ) $(N) --pandoc-flags "$(PANDOC_FLAGS)" $(if $(filter 0,$(MERGE)),--no-merge)
 
 clean:
 	rm -f $(PDF)

@@ -11,7 +11,7 @@
 
 Output, in <quiz folder>/copies/:
   copy-001.pdf ...   one 3-page PDF per copy (instructions, questions, answer sheet)
-  all-copies.pdf     every copy in one file for printing (needs pdfunite)
+  all-copies.pdf     the copies of this run in one file for printing (pdfunite, or qpdf)
   index.csv          for each copy: original question printed at each position
   src/               the generated markdown and header of each copy
 
@@ -93,12 +93,18 @@ def main():
             w.writerow(["copy"] + [f"printed_q{i}=orig:options" for i in range(1, len(questions) + 1)])
         w.writerows(index_rows)
     if not args.no_merge:
+        merged = out / "all-copies.pdf"
+        files = [str(p) for p in pdfs]
         if shutil.which("pdfunite"):
-            subprocess.run(["pdfunite", *map(str, pdfs), str(out / "all-copies.pdf")], check=True)
-            print(f"{out / 'all-copies.pdf'}")
+            cmd = ["pdfunite", *files, str(merged)]
+        elif shutil.which("qpdf"):
+            cmd = ["qpdf", "--empty", "--pages", *files, "--", str(merged)]
         else:
-            print("pdfunite not found: all-copies.pdf not made (print the copy-*.pdf files)")
-
+            cmd = None
+            print("pdfunite (poppler) or qpdf not found: all-copies.pdf not made")
+        if cmd:
+            subprocess.run(cmd, check=True)
+            print(merged)
 
 if __name__ == "__main__":
     main()
