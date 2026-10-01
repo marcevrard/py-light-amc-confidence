@@ -45,6 +45,9 @@
     \foreach \r in {0,...,9}{ \bub{40+10*\i}{68+6*\r} }
   }
   \foreach \d [count=\r from 0] in {1,2,3,4,5,6,7,8,9,0}{ \node[font=\sffamily\scriptsize] at (30,68+6*\r) {\d}; }
+  % light digits in the gaps between the ID columns (outside the bubbles, never read)
+  \foreach \d [count=\r from 0] in {1,2,3,4,5,6,7,8,9,0}{
+    \foreach \i in {0,...,6}{ \node[font=\sffamily\scriptsize,black!35] at (45+10*\i,68+6*\r) {\d}; } }
   \draw[upsaclay] (35,64.5) -- (115,64.5);
   % instructions box
   \node[anchor=north west,text width=65mm,font=\sffamily\small,align=left] at (125,54)
